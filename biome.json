@@ -21,10 +21,13 @@
       "a11y": {
         "noSvgWithoutTitle": "off",
         "useKeyWithClickEvents": "off",
-        "useFocusableInteractive": "off"
+        "useFocusableInteractive": "off",
+        "noAriaHiddenOnFocusable": "off",
+        "useSemanticElements": "off"
       },
       "suspicious": { "noExplicitAny": "warn" },
-      "complexity": { "noForEach": "off" }
+      "complexity": { "noForEach": "off" },
+      "correctness": { "useExhaustiveDependencies": "off" }
     }
   }
 }

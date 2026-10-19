@@ -17,8 +17,11 @@ export function BeforeAfter({ before, after }: { before: string; after: string }
       class="ba"
       ref={box}
       tabIndex={0}
-      role="group"
+      role="slider"
       aria-label="Before and after. Drag or use arrow keys to compare."
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(pos)}
       data-testid="before-after"
       onPointerDown={(e) => {
         dragging.current = true;
