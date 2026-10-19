@@ -239,7 +239,10 @@ export async function matchingNoise(dino: Dino, x224: Float32Array, opts: NoiseO
   const R = opts.paramRes ?? 112;
   const x = tf.tensor4d(x224, [1, SIZE, SIZE, 3]);
   const target = tf.tidy(() => dino.embed(x));
-  let dp = tf.zeros([1, R, R, 3]) as tf.Tensor4D;
+  // random start inside the ε-ball (madry-style pgd). starting at δ = 0 is the one place the gradient is
+  // exactly zero, since the image is maximally similar to itself there. webgpu's float fuzz happened to
+  // kick it loose; cpu/wasm math is exact and the attack just sat there
+  let dp = tf.randomUniform([1, R, R, 3], -eps, eps) as tf.Tensor4D;
 
   const simOf = (d: tf.Tensor4D) => {
     const up = tf.image.resizeBilinear(d, [SIZE, SIZE]);
