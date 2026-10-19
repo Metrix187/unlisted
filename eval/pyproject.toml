@@ -1,0 +1,27 @@
+[project]
+name = "unlisted-eval"
+version = "0.1.0"
+description = "retrieval attack harness for scrub's defenses"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "torch>=2.5",
+  "torchvision>=0.20",
+  "transformers>=4.46",
+  "safetensors>=0.4",
+  "faiss-cpu>=1.9",
+  "pillow>=11",
+  "numpy>=2",
+  "tqdm>=4.66",
+]
+
+[tool.uv]
+package = false
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu124", marker = "sys_platform == 'win32' or sys_platform == 'linux'" }
+torchvision = { index = "pytorch-cu124", marker = "sys_platform == 'win32' or sys_platform == 'linux'" }
