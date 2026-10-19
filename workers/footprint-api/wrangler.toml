@@ -1,3 +1,21 @@
 name = "unlisted-footprint-api"
 main = "src/index.ts"
 compatibility_date = "2025-06-01"
+
+# what the cache holds: sha256(normalized address) -> photo urls, counts, dates. never the address.
+# deploy.sh creates the real namespace and swaps its id in; this one's only good for `wrangler dev`
+[[kv_namespaces]]
+binding = "CACHE"
+id = "00000000000000000000000000000000"
+
+# fixture photos for the demo address, served through /img. nothing real in there
+[assets]
+directory = "./fixtures/photos"
+binding = "ASSETS"
+
+[vars]
+ALLOWED_ORIGINS = "*"
+
+# no request logging. the address is in the request body and we'd rather not have it anywhere
+[observability]
+enabled = false

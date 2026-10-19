@@ -12,3 +12,6 @@ no people we know, no homes we know — they're strangers' public flickr uploads
 | fp-bathroom-2.jpg | 35022be993e3b5b9 | https://www.flickr.com/photos/lakemartinvoice/6816636594 | John Coley | https://creativecommons.org/licenses/by/2.0/ |
 | fp-living-3.jpg | 988fb6132b97bd38 | https://www.flickr.com/photos/sonofgroucho/7359205090 | Son of Groucho | https://creativecommons.org/licenses/by/2.0/ |
 | fp-exterior-3.jpg | cce4ed93e23b80ae | https://www.flickr.com/photos/kulturnettsfj/9212353609 | Kulturnett Sogn og Fjordane | https://creativecommons.org/licenses/by/2.0/ |
+
+the `fp-<name>.jpg` files without a number (fp-kitchen.jpg, fp-living-rug.jpg, ...) are the same photos as
+`packages/vision/fixtures/<name>.jpg`, shrunk to 800px. credits are in that folder's ATTRIBUTION.md.
