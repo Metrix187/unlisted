@@ -1,0 +1,25 @@
+{
+  "name": "@unlisted/footprint",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 5174 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --port 4174 --strictPort",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@unlisted/ui": "workspace:*",
+    "@unlisted/vision": "workspace:*",
+    "marked": "15.0.12",
+    "preact": "10.26.9"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "2.10.2",
+    "vite": "6.3.5",
+    "vite-plugin-pwa": "1.0.1",
+    "vitest": "3.2.4"
+  }
+}

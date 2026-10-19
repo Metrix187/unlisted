@@ -1,0 +1,20 @@
+{
+  "name": "@unlisted/ui",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.css": "./src/tokens.css"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "echo \"ui: nothing to test yet\""
+  },
+  "peerDependencies": {
+    "preact": "^10.26.0"
+  },
+  "devDependencies": {
+    "preact": "10.26.9"
+  }
+}

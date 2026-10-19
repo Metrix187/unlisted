@@ -1,0 +1,25 @@
+{
+  "name": "unlisted",
+  "private": true,
+  "version": "0.1.0",
+  "license": "LicenseRef-WTFPUP-1.0",
+  "type": "module",
+  "packageManager": "pnpm@11.21.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter \"./apps/*\" --filter \"./workers/*\" dev",
+    "build": "pnpm -r --filter \"./apps/*\" build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "e2e": "playwright test",
+    "lint": "biome check .",
+    "format": "biome format --write ."
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@playwright/test": "1.53.2",
+    "typescript": "5.8.3"
+  }
+}

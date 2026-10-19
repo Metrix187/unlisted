@@ -1,0 +1,13 @@
+node_modules/
+dist/
+dev-dist/
+.wrangler/
+.dev.vars
+*.log
+test-results/
+playwright-report/
+eval/.venv/
+eval/data/
+eval/work/
+__pycache__/
+.DS_Store
