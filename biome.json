@@ -3,6 +3,7 @@
   "files": {
     "ignore": [
       "**/dist/**",
+      "**/dist-harness/**",
       "**/dev-dist/**",
       "**/node_modules/**",
       "**/.wrangler/**",

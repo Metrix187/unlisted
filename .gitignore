@@ -11,3 +11,4 @@ eval/data/
 eval/work/
 __pycache__/
 .DS_Store
+dist-harness/

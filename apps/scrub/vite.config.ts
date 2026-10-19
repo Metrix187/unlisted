@@ -33,6 +33,9 @@ function csp(): Plugin {
   };
 }
 
+// HARNESS=1 adds a second, unlinked page that eval/ drives headlessly. never part of a normal build
+const harness = process.env.HARNESS === "1";
+
 export default defineConfig({
   plugins: [
     preact(),
@@ -74,6 +77,11 @@ export default defineConfig({
     }),
   ],
   worker: { format: "es" },
-  build: { target: "es2022", sourcemap: true },
+  build: {
+    target: "es2022",
+    sourcemap: true,
+    outDir: harness ? "dist-harness" : "dist",
+    rollupOptions: harness ? { input: { main: "index.html", harness: "harness.html" } } : undefined,
+  },
   preview: { headers },
 });
