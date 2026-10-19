@@ -17,7 +17,8 @@ const fmt = (d?: string) =>
 
 function Thumb({ photo, kind, onKind }: { photo: Photo; kind?: Kind; onKind: (k: Kind) => void }) {
   const { src, proxied } = thumbSrc(photo.thumb);
-  // try with cors first so we can read pixels; if the cdn says no, load it plain and give up on sorting it
+  // try with cors first so we can read pixels; if the cdn says no, load it plain and give up on sorting it.
+  // no lazy loading: the headline counts interior photos, so the ones below the fold have to load too
   const [cors, setCors] = useState(true);
   const full = thumbSrc(photo.url).src;
   return (
@@ -33,7 +34,6 @@ function Thumb({ photo, kind, onKind }: { photo: Photo; kind?: Kind; onKind: (k:
         key={cors ? "cors" : "plain"}
         src={src}
         alt=""
-        loading="lazy"
         referrerpolicy="no-referrer"
         crossOrigin={cors ? "anonymous" : undefined}
         onLoad={(e) => onKind(cors ? classifyImg(e.currentTarget as HTMLImageElement) : "unknown")}

@@ -40,7 +40,7 @@ export function Photo({ src, heat, alt, testId, cool = 0.1 }: Props) {
   );
 }
 
-export function Score({ value, label = "Exposure" }: { value: number; label?: string }) {
+export function Score({ value, label = "how matchable" }: { value: number; label?: string }) {
   return (
     <span class="score" data-testid="score">
       <span class="score-num" style={{ color: scoreColor(value) }}>

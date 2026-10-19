@@ -291,7 +291,8 @@ async function analyze(id: number, blob: Blob, keep: boolean): Promise<Analysis>
     exterior: scene.exterior,
     caption: caption(built.room, built.sources, built.score, scene.exterior),
     elements: built.sources,
-    hasPerson: coverage > 0.01,
+    // a person across the room is well under 1% of the frame, so the bar is low on purpose
+    hasPerson: coverage > 0.002,
     subjectCoverage: coverage,
     detections,
     timings,
