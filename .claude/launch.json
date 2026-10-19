@@ -2,6 +2,12 @@
   "version": "0.0.1",
   "configurations": [
     {
+      "name": "all-dev",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["dev"],
+      "port": 5173
+    },
+    {
       "name": "scrub-preview",
       "runtimeExecutable": "pnpm",
       "runtimeArgs": ["--filter", "@unlisted/scrub", "preview"],
