@@ -1,5 +1,10 @@
 import "@unlisted/ui/tokens.css";
-import { Screen } from "@unlisted/ui";
+import "./styles.css";
 import { render } from "preact";
+import { App } from "./App";
 
-render(<Screen title="hi">coming soon</Screen>, document.getElementById("app")!);
+render(<App />, document.getElementById("app")!);
+
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  import("virtual:pwa-register").then(({ registerSW }) => registerSW({ immediate: true }));
+}
