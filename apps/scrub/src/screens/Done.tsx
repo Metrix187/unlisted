@@ -48,7 +48,8 @@ export function Done({ photo, outcome, onBack, onStartOver }: Props) {
             <p class="small u-muted" data-testid="noise-line">
               Matching noise: the model we tested against now rates this a{" "}
               {Math.max(0, Math.round(noise.similarityAfter * 100))}% match to your original (it was 100%).
-              You can't see the change, and it'll stop working as those models get retrained.
+              Heads up: in our own tests this alone rarely stopped a match, because matching tools resize
+              photos in ways that wash it out. It helps a bit on top of the background scrub.
             </p>
           ) : (
             <Note>Matching noise skipped: {noise.reason}</Note>
