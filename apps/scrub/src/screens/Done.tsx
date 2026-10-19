@@ -46,9 +46,9 @@ export function Done({ photo, outcome, onBack, onStartOver }: Props) {
         {noise &&
           (noise.applied ? (
             <p class="small u-muted" data-testid="noise-line">
-              Matching noise: to the model we tested against, this now looks{" "}
-              {Math.max(0, Math.round((1 - noise.similarityAfter) * 100))}% different from your original. It's
-              invisible to you, and it will stop working as those models get retrained.
+              Matching noise: the model we tested against now rates this a{" "}
+              {Math.max(0, Math.round(noise.similarityAfter * 100))}% match to your original (it was 100%).
+              You can't see the change, and it'll stop working as those models get retrained.
             </p>
           ) : (
             <Note>Matching noise skipped: {noise.reason}</Note>

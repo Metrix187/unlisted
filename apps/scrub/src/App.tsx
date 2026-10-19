@@ -59,7 +59,9 @@ export function App() {
   async function scrub(opts: { mode: ScrubMode; backdrop: Backdrop; noise: boolean }) {
     setError(null);
     try {
-      const result = await vision().scrub(opts, progress);
+      // ?slow lets the matching noise fall back to wasm when there's no webgpu. minutes, not seconds
+      const slow = new URLSearchParams(location.search).has("slow");
+      const result = await vision().scrub({ ...opts, slow }, progress);
       setBusy({ label: "Checking the result", value: 0.99 });
       // re-run the same analysis on the output so the heat map is honest, not a victory lap
       const analysis = await vision().analyze(result.blob, undefined, false);

@@ -57,7 +57,7 @@ export class VisionClient {
   }
 
   scrub(
-    opts: { mode: ScrubMode; backdrop: Backdrop; noise: boolean },
+    opts: { mode: ScrubMode; backdrop: Backdrop; noise: boolean; slow?: boolean },
     onProgress?: (p: ProgressEvent) => void,
   ): Promise<ScrubResult> {
     return this.call<ScrubResult>({ type: "scrub", ...opts }, onProgress);

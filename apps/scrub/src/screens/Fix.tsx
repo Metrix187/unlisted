@@ -101,7 +101,7 @@ export function Fix({ photo, busy, error, onScrub, onBack }: Props) {
             <>
               Makes retrieval models less likely to match this. Decays as they retrain.
               {!hasWebGPU &&
-                " Your browser doesn't have WebGPU, so this will be slow, or skipped if it can't run."}{" "}
+                " This needs WebGPU, which this browser doesn't seem to have, so it'll probably get skipped."}{" "}
               First use downloads an 88 MB model.
             </>
           }

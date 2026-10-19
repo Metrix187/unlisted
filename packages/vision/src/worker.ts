@@ -23,7 +23,7 @@ const scope = globalThis as unknown as WorkerScope;
 export type WorkerRequest =
   | { id: number; type: "init"; assetBase: string }
   | { id: number; type: "analyze"; blob: Blob; keep?: boolean }
-  | { id: number; type: "scrub"; mode: ScrubMode; backdrop: Backdrop; noise: boolean }
+  | { id: number; type: "scrub"; mode: ScrubMode; backdrop: Backdrop; noise: boolean; slow?: boolean }
   | { id: number; type: "noiseStatus" };
 
 export type WorkerResponse =
@@ -303,10 +303,10 @@ let dinoMod: typeof import("./dino") | undefined;
 let dino: import("./dino").Dino | undefined;
 let backend = "";
 
-async function ensureDino(id: number) {
+async function ensureDino(id: number, slow: boolean) {
   if (dino) return;
   dinoMod = await import("./dino");
-  backend = await dinoMod.pickBackend(`${assetBase}tfjs/`);
+  backend = await dinoMod.pickBackend(`${assetBase}tfjs/`, slow);
   const buf = await fetchModel("dino", (l, t) =>
     post({
       id,
@@ -330,11 +330,20 @@ function to224(img: RGBA): Float32Array {
   return out;
 }
 
-async function addNoise(id: number, img: RGBA): Promise<{ img: RGBA; report: NoiseReport }> {
+async function addNoise(id: number, img: RGBA, slow: boolean): Promise<{ img: RGBA; report: NoiseReport }> {
   const t0 = performance.now();
   try {
-    await ensureDino(id);
+    await ensureDino(id, slow);
   } catch (e) {
+    if (dinoMod && e instanceof dinoMod.NoGpuError)
+      return {
+        img,
+        report: {
+          applied: false,
+          reason:
+            "this browser doesn't have WebGPU, and without it this step takes several minutes. Chrome or Edge on a computer usually have it.",
+        },
+      };
     return {
       img,
       report: { applied: false, reason: `Couldn't load the matching model here (${(e as Error).message}).` },
@@ -382,7 +391,7 @@ async function encode(img: RGBA): Promise<Blob> {
   return canvas.convertToBlob({ type: "image/jpeg", quality: 0.92 });
 }
 
-async function scrub(id: number, mode: ScrubMode, backdrop: Backdrop, noise: boolean) {
+async function scrub(id: number, mode: ScrubMode, backdrop: Backdrop, noise: boolean, slow: boolean) {
   if (!current) throw new Error("no photo loaded");
   const step = (value: number, label: string) => post({ id, type: "progress", stage: "scrub", value, label });
   step(0.1, mode === "metadata" ? "Stripping metadata" : "Scrubbing");
@@ -393,7 +402,7 @@ async function scrub(id: number, mode: ScrubMode, backdrop: Backdrop, noise: boo
 
   let report: NoiseReport | undefined;
   if (noise) {
-    const r = await addNoise(id, out);
+    const r = await addNoise(id, out, slow);
     out = r.img;
     report = r.report;
   }
@@ -414,7 +423,7 @@ scope.onmessage = async (ev: MessageEvent<WorkerRequest>) => {
       await loadMediapipe(msg.id);
       result = await analyze(msg.id, msg.blob, msg.keep ?? true);
     } else if (msg.type === "scrub") {
-      result = await scrub(msg.id, msg.mode, msg.backdrop, msg.noise);
+      result = await scrub(msg.id, msg.mode, msg.backdrop, msg.noise, msg.slow ?? false);
     } else if (msg.type === "noiseStatus") {
       const nav = scope.navigator as Navigator & { gpu?: unknown };
       result = { webgpu: !!nav.gpu, loaded: !!dino, backend };

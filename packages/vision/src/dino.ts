@@ -280,7 +280,11 @@ export async function similarity(dino: Dino, a224: Float32Array, b224: Float32Ar
   return v;
 }
 
-export async function pickBackend(wasmBase: string): Promise<string> {
+export class NoGpuError extends Error {}
+
+// webgpu or bust, unless the caller explicitly says slow is fine. on wasm a 10-step attack takes minutes,
+// which is a bad trade to make for someone without telling them
+export async function pickBackend(wasmBase: string, allowSlow = false): Promise<string> {
   const nav = (globalThis as { navigator?: { gpu?: unknown } }).navigator;
   if (nav?.gpu) {
     try {
@@ -290,9 +294,10 @@ export async function pickBackend(wasmBase: string): Promise<string> {
         return "webgpu";
       }
     } catch {
-      // adapter missing or blocklisted. fall through to wasm
+      // adapter missing or blocklisted. fall through
     }
   }
+  if (!allowSlow) throw new NoGpuError("no webgpu");
   try {
     const wasm = await import("@tensorflow/tfjs-backend-wasm");
     wasm.setWasmPaths(wasmBase);
