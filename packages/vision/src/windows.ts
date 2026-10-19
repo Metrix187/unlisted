@@ -47,7 +47,7 @@ type Comp = { area: number; x0: number; y0: number; x1: number; y1: number; edge
 export function findWindows(gray: FMap): WindowHit[] {
   const { width: w, height: h, data } = gray;
   const thr = Math.max(0.72, percentile(data, 0.9));
-  let mask = new Uint8Array(w * h);
+  let mask: Uint8Array = new Uint8Array(w * h);
   for (let i = 0; i < data.length; i++) mask[i] = data[i] >= thr ? 1 : 0;
   mask = close(mask, w, h, 1);
 

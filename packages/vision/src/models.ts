@@ -13,6 +13,10 @@ export const MODELS = {
     url: "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_multiclass_256x256/float32/latest/selfie_multiclass_256x256.tflite",
     label: "person finder",
   },
+  outliner: {
+    url: "https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/latest/deeplab_v3.tflite",
+    label: "outline finder",
+  },
   detector: {
     url: "https://storage.googleapis.com/mediapipe-models/object_detector/efficientdet_lite0/float16/latest/efficientdet_lite0.tflite",
     label: "room-stuff finder",

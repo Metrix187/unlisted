@@ -44,6 +44,9 @@ export type Analysis = {
   elements: HeatSource[];
   hasPerson: boolean;
   subjectCoverage: number;
+  detections: Detection[];
+  // ms since start, per stage. for the ?debug crowd
+  timings?: Record<string, number>;
 };
 
 export type ScrubMode = "background" | "hotspots" | "metadata";

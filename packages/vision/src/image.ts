@@ -258,3 +258,19 @@ export function mean(values: Float32Array): number {
   for (let i = 0; i < values.length; i++) s += values[i];
   return values.length ? s / values.length : 0;
 }
+
+// crop by a normalized box, clamped to the image
+export function cropRGBA(img: RGBA, x: number, y: number, w: number, h: number): RGBA {
+  const x0 = Math.max(0, Math.floor(x * img.width));
+  const y0 = Math.max(0, Math.floor(y * img.height));
+  const x1 = Math.min(img.width, Math.ceil((x + w) * img.width));
+  const y1 = Math.min(img.height, Math.ceil((y + h) * img.height));
+  const cw = Math.max(1, x1 - x0);
+  const ch = Math.max(1, y1 - y0);
+  const out = makeRGBA(cw, ch);
+  for (let row = 0; row < ch; row++) {
+    const s = ((y0 + row) * img.width + x0) * 4;
+    out.data.set(img.data.subarray(s, s + cw * 4), row * cw * 4);
+  }
+  return out;
+}

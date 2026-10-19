@@ -1,6 +1,6 @@
 import { ImageSegmenter, ObjectDetector } from "@mediapipe/tasks-vision";
 import { SUBJECT_LABELS, buildHeat, caption } from "./heat";
-import { fitWithin, makeFMap, resizeFMap, resizeRGBA, toGray } from "./image";
+import { cropRGBA, fitWithin, makeFMap, resizeFMap, resizeRGBA, smoothstep, toGray } from "./image";
 import { MODELS, fetchModel } from "./models";
 import { classifyScene } from "./scene";
 import { blurHotspots, scrubBackground } from "./scrub";
@@ -33,11 +33,17 @@ export type WorkerResponse =
 
 const MAX_SIDE = 2560;
 const ANALYSIS_SIDE = 512;
+// the subject mask gets a bigger canvas than the rest so hair edges survive the upscale to full res
+const SUBJECT_SIDE = 1024;
 const HEAT_SIDE = 256;
 
 let assetBase = "/";
 let segmenter: ImageSegmenter | undefined;
 let detector: ObjectDetector | undefined;
+let outliner: ImageSegmenter | undefined;
+
+// pascal voc class ids in deeplab's output
+const VOC: Record<string, number> = { bird: 3, cat: 8, dog: 12, person: 15 };
 
 type Current = { img: RGBA; subject: FMap; heat: FMap; subjectCoverage: number };
 let current: Current | undefined;
@@ -45,11 +51,12 @@ let current: Current | undefined;
 const post = (msg: WorkerResponse, transfer: Transferable[] = []) => scope.postMessage(msg, transfer);
 
 async function loadMediapipe(id: number) {
-  if (segmenter && detector) return;
-  const parts = { segmenter: [0, 1], detector: [0, 1] } as Record<string, [number, number]>;
+  if (segmenter && detector && outliner) return;
+  const parts = { segmenter: [0, 1], detector: [0, 1], outliner: [0, 1] } as Record<string, [number, number]>;
   const report = () => {
-    const loaded = parts.segmenter[0] + parts.detector[0];
-    const total = parts.segmenter[1] + parts.detector[1];
+    const vals = Object.values(parts);
+    const loaded = vals.reduce((s, p) => s + p[0], 0);
+    const total = vals.reduce((s, p) => s + p[1], 0);
     post({
       id,
       type: "progress",
@@ -58,13 +65,17 @@ async function loadMediapipe(id: number) {
       label: "Getting the on-device models ready",
     });
   };
-  const [segBuf, detBuf] = await Promise.all([
+  const [segBuf, detBuf, outBuf] = await Promise.all([
     fetchModel("segmenter", (l, t) => {
       parts.segmenter = [l, t];
       report();
     }),
     fetchModel("detector", (l, t) => {
       parts.detector = [l, t];
+      report();
+    }),
+    fetchModel("outliner", (l, t) => {
+      parts.outliner = [l, t];
       report();
     }),
   ]);
@@ -79,6 +90,13 @@ async function loadMediapipe(id: number) {
   await setFactory();
   segmenter = await ImageSegmenter.createFromOptions(fileset, {
     baseOptions: { modelAssetBuffer: segBuf, delegate: "CPU" },
+    runningMode: "IMAGE",
+    outputCategoryMask: false,
+    outputConfidenceMasks: true,
+  });
+  await setFactory();
+  outliner = await ImageSegmenter.createFromOptions(fileset, {
+    baseOptions: { modelAssetBuffer: outBuf, delegate: "CPU" },
     runningMode: "IMAGE",
     outputCategoryMask: false,
     outputConfidenceMasks: true,
@@ -108,52 +126,146 @@ function toImageData(img: RGBA) {
   return new ImageData(new Uint8ClampedArray(img.data), img.width, img.height);
 }
 
-async function analyze(id: number, blob: Blob, keep: boolean): Promise<Analysis> {
-  const step = (value: number, label: string) =>
-    post({ id, type: "progress", stage: "analyze", value, label });
-  step(0.05, "Opening the photo");
-  const img = await decode(blob, MAX_SIDE);
-  const [aw, ah] = fitWithin(img.width, img.height, ANALYSIS_SIDE);
-  const small = resizeRGBA(img, aw, ah);
-
-  step(0.2, "Looking for people");
-  const seg = segmenter!.segment(toImageData(small));
-  const masks = seg.confidenceMasks ?? [];
-  const subject = makeFMap(aw, ah);
-  if (masks[0]) {
-    const bg = masks[0].getAsFloat32Array();
-    for (let i = 0; i < subject.data.length; i++) subject.data[i] = 1 - bg[i];
-  }
-  seg.close();
-
-  step(0.45, "Spotting furniture and fixtures");
-  const det = detector!.detect(toImageData(small));
-  const detections: Detection[] = det.detections
+function runDetector(part: RGBA, ox: number, oy: number, sx: number, sy: number): Detection[] {
+  const res = detector!.detect(toImageData(part));
+  return res.detections
     .filter((d) => d.boundingBox && d.categories[0])
     .map((d) => {
       const b = d.boundingBox!;
       return {
         label: d.categories[0].categoryName,
         score: d.categories[0].score,
-        box: { x: b.originX / aw, y: b.originY / ah, w: b.width / aw, h: b.height / ah },
+        box: {
+          x: ox + (b.originX / part.width) * sx,
+          y: oy + (b.originY / part.height) * sy,
+          w: (b.width / part.width) * sx,
+          h: (b.height / part.height) * sy,
+        },
       };
     });
+}
 
-  // pets count as subject too. the segmenter only knows humans, so they get a soft ellipse from the box
-  for (const d of detections) {
-    if (!SUBJECT_LABELS.has(d.label) || d.label === "person") continue;
-    const cx = (d.box.x + d.box.w / 2) * aw;
-    const cy = (d.box.y + d.box.h / 2) * ah;
-    const rx = (d.box.w * aw) / 2;
-    const ry = (d.box.h * ah) / 2;
-    for (let y = 0; y < ah; y++)
-      for (let x = 0; x < aw; x++) {
-        const e = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
-        if (e < 1.1)
-          subject.data[y * aw + x] = Math.max(subject.data[y * aw + x], Math.min(1, (1.1 - e) * 4));
+// efficientdet-lite0 squashes everything to 320px, so a person across the room is a dozen pixels and
+// just vanishes. one full-frame pass plus a 2x2 of overlapping tiles fixes most of that
+function detectTiled(img: RGBA, small: RGBA): Detection[] {
+  const all = runDetector(small, 0, 0, 1, 1);
+  if (Math.max(img.width, img.height) >= 640) {
+    const t = 0.58;
+    for (const ty of [0, 1 - t])
+      for (const tx of [0, 1 - t]) {
+        const crop = cropRGBA(img, tx, ty, t, t);
+        const [cw, ch] = fitWithin(crop.width, crop.height, ANALYSIS_SIDE);
+        all.push(...runDetector(resizeRGBA(crop, cw, ch), tx, ty, t, t));
       }
   }
+  return suppress(all);
+}
 
+// nms, but by "how much of the smaller box is inside the bigger one" so a tile's half-a-couch doesn't
+// survive next to the full-frame whole couch
+function suppress(dets: Detection[]): Detection[] {
+  const keep: Detection[] = [];
+  for (const d of [...dets].sort((a, b) => b.score - a.score)) {
+    const dup = keep.some((k) => {
+      if (k.label !== d.label) return false;
+      const ix = Math.max(0, Math.min(k.box.x + k.box.w, d.box.x + d.box.w) - Math.max(k.box.x, d.box.x));
+      const iy = Math.max(0, Math.min(k.box.y + k.box.h, d.box.y + d.box.h) - Math.max(k.box.y, d.box.y));
+      const inter = ix * iy;
+      const small = Math.min(k.box.w * k.box.h, d.box.w * d.box.h);
+      return small > 0 && inter / small > 0.6;
+    });
+    if (!dup) keep.push(d);
+  }
+  return keep;
+}
+
+async function analyze(id: number, blob: Blob, keep: boolean): Promise<Analysis> {
+  const t0 = performance.now();
+  const timings: Record<string, number> = {};
+  const step = (value: number, label: string) => {
+    timings[label] = Math.round(performance.now() - t0);
+    post({ id, type: "progress", stage: "analyze", value, label });
+  };
+  step(0.05, "Opening the photo");
+  const img = await decode(blob, MAX_SIDE);
+  const [aw, ah] = fitWithin(img.width, img.height, ANALYSIS_SIDE);
+  const small = resizeRGBA(img, aw, ah);
+
+  step(0.2, "Spotting furniture, fixtures, and people");
+  const detections = detectTiled(img, small);
+
+  step(0.4, "Tracing people");
+  const [sw, sh] = fitWithin(img.width, img.height, SUBJECT_SIDE);
+  const subject = makeFMap(sw, sh);
+  // confidence for one class (or 1 - background) out of a mediapipe segmenter run
+  const segment = (model: ImageSegmenter, part: RGBA, cls: number | "notbg") => {
+    const seg = model.segment(toImageData(part));
+    const masks = seg.confidenceMasks ?? [];
+    const out = makeFMap(part.width, part.height);
+    const m = masks[cls === "notbg" ? 0 : cls];
+    if (m) {
+      const f = m.getAsFloat32Array();
+      for (let i = 0; i < out.data.length; i++) out.data[i] = cls === "notbg" ? 1 - f[i] : f[i];
+    }
+    seg.close();
+    return out;
+  };
+  // crop masks get thresholded and faded out toward the crop's edges, otherwise any low-level mush in the
+  // mask shows up as a sharp rectangle around the person
+  const paste = (m: FMap, bx: number, by: number, bw: number, bh: number) => {
+    const tw = Math.max(1, Math.round(bw * sw));
+    const th = Math.max(1, Math.round(bh * sh));
+    const placed = resizeFMap(m, tw, th);
+    const x0 = Math.round(bx * sw);
+    const y0 = Math.round(by * sh);
+    const fade = Math.max(2, Math.min(tw, th) * 0.06);
+    for (let y = 0; y < th && y0 + y < sh; y++)
+      for (let x = 0; x < tw && x0 + x < sw; x++) {
+        const i = (y0 + y) * sw + x0 + x;
+        const edge = Math.min(1, Math.min(x, y, tw - 1 - x, th - 1 - y) / fade);
+        const v = smoothstep(0.3, 0.7, placed.data[y * tw + x]) * edge;
+        if (v > subject.data[i]) subject.data[i] = v;
+      }
+  };
+
+  // whole-frame selfie pass catches close-ups. it also hallucinates people in plants and pillars, so away
+  // from anything the detector called a person we only keep the parts it's really sure about
+  const subjects = detections.filter((d) => SUBJECT_LABELS.has(d.label) && d.score > 0.25);
+  const people = subjects.filter((d) => d.label === "person");
+  const whole = resizeFMap(segment(segmenter!, small, "notbg"), sw, sh);
+  for (let y = 0; y < sh; y++)
+    for (let x = 0; x < sw; x++) {
+      const i = y * sw + x;
+      let v = whole.data[i];
+      if (people.length) {
+        const nx = x / sw;
+        const ny = y / sh;
+        const near = people.some(
+          (p) =>
+            nx > p.box.x - 0.03 &&
+            nx < p.box.x + p.box.w + 0.03 &&
+            ny > p.box.y - 0.03 &&
+            ny < p.box.y + p.box.h + 0.03,
+        );
+        if (!near && v < 0.85) v = 0;
+      } else if (v < 0.6) v = 0;
+      subject.data[i] = v;
+    }
+
+  // the selfie model is hopeless at a whole person across the room, and knows nothing about pets. so each
+  // detected person/pet gets a cropped deeplab pass of its own, pasted back in
+  for (const d of subjects) {
+    const padX = d.box.w * 0.15;
+    const padY = d.box.h * 0.08;
+    const bx = Math.max(0, d.box.x - padX);
+    const by = Math.max(0, d.box.y - padY);
+    const bw = Math.min(1 - bx, d.box.w + padX * 2);
+    const bh = Math.min(1 - by, d.box.h + padY * 2);
+    const crop = cropRGBA(img, bx, by, bw, bh);
+    const [cw, ch] = fitWithin(crop.width, crop.height, 384);
+    const part = resizeRGBA(crop, cw, ch);
+    paste(segment(outliner!, part, VOC[d.label] ?? VOC.person), bx, by, bw, bh);
+  }
   step(0.65, "Checking windows and patterns");
   const [hw, hh] = fitWithin(aw, ah, HEAT_SIDE);
   const gray = toGray(resizeRGBA(small, hw, hh));
@@ -181,6 +293,8 @@ async function analyze(id: number, blob: Blob, keep: boolean): Promise<Analysis>
     elements: built.sources,
     hasPerson: coverage > 0.01,
     subjectCoverage: coverage,
+    detections,
+    timings,
   };
 }
 

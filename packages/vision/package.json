@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./worker": "./src/worker.ts",
     "./client": "./src/client.ts",
-    "./vite": "./vite-plugin.ts"
+    "./vite": "./vite-plugin.ts",
+    "./models": "./src/models.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",

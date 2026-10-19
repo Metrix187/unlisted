@@ -14,9 +14,10 @@ function files(): Record<string, () => Buffer | string> {
   return {
     "mediapipe/vision_wasm_internal.wasm": () => readFileSync(join(mp, "vision_wasm_internal.wasm")),
     // the loader is a plain script that sets a global. tack an export on the end so a module worker can
-    // import() it instead of importScripts()
+    // import() it instead of importScripts(). modules are strict mode, which breaks one sloppy-mode
+    // function-inside-an-if they use for debug logging, so we predeclare that one
     "mediapipe/vision_wasm_internal.mjs": () =>
-      `${readFileSync(join(mp, "vision_wasm_internal.js"), "utf8")}\nexport default ModuleFactory;\n`,
+      `var custom_dbg = (...a) => console.warn(...a);\n${readFileSync(join(mp, "vision_wasm_internal.js"), "utf8")}\nexport default ModuleFactory;\n`,
     "tfjs/tfjs-backend-wasm.wasm": () => readFileSync(join(tfw, "tfjs-backend-wasm.wasm")),
     "tfjs/tfjs-backend-wasm-simd.wasm": () => readFileSync(join(tfw, "tfjs-backend-wasm-simd.wasm")),
     "tfjs/tfjs-backend-wasm-threaded-simd.wasm": () =>

@@ -32,6 +32,9 @@ importers:
       preact:
         specifier: 10.26.9
         version: 10.26.9
+      workbox-window:
+        specifier: 7.3.0
+        version: 7.3.0
     devDependencies:
       '@preact/preset-vite':
         specifier: 2.10.2
@@ -41,7 +44,7 @@ importers:
         version: 6.3.5(@types/node@22.15.32)(terser@5.51.2)
       vite-plugin-pwa:
         specifier: 1.0.1
-        version: 1.0.1(vite@6.3.5(@types/node@22.15.32)(terser@5.51.2))(workbox-build@7.4.1)(workbox-window@7.4.1)
+        version: 1.0.1(vite@6.3.5(@types/node@22.15.32)(terser@5.51.2))(workbox-build@7.4.1)(workbox-window@7.3.0)
       vitest:
         specifier: 3.2.4
         version: 3.2.4(@types/node@22.15.32)(terser@5.51.2)
@@ -69,6 +72,9 @@ importers:
       workbox-strategies:
         specifier: 7.3.0
         version: 7.3.0
+      workbox-window:
+        specifier: 7.3.0
+        version: 7.3.0
     devDependencies:
       '@preact/preset-vite':
         specifier: 2.10.2
@@ -78,7 +84,7 @@ importers:
         version: 6.3.5(@types/node@22.15.32)(terser@5.51.2)
       vite-plugin-pwa:
         specifier: 1.0.1
-        version: 1.0.1(vite@6.3.5(@types/node@22.15.32)(terser@5.51.2))(workbox-build@7.4.1)(workbox-window@7.4.1)
+        version: 1.0.1(vite@6.3.5(@types/node@22.15.32)(terser@5.51.2))(workbox-build@7.4.1)(workbox-window@7.3.0)
       vitest:
         specifier: 3.2.4
         version: 3.2.4(@types/node@22.15.32)(terser@5.51.2)
@@ -2827,6 +2833,9 @@ packages:
   workbox-sw@7.4.1:
     resolution: {integrity: sha512-fez5f2DUlDJWTFYkCWQpY10N8gtztd849NswCbVFk0QlcSM4HT5A8x4g4ii650yem4I8tHY0R7JZahwp3ltIPw==}
 
+  workbox-window@7.3.0:
+    resolution: {integrity: sha512-qW8PDy16OV1UBaUNGlTVcepzrlzyzNW/ZJvFQQs2j2TzGsg6IKjcpZC1RSquqQnTOafl5pCj5bGfAHlCjOOjdA==}
+
   workbox-window@7.4.1:
     resolution: {integrity: sha512-notZDH2u8VXaqyuD7xaqIfEFi6SRM4SUSd7ewe9PDsVqADuepxX2ZMY3uvuZGxzY5ZOsGC/vD3A/3smFtJt4/A==}
 
@@ -5451,14 +5460,14 @@ snapshots:
       - tsx
       - yaml
 
-  vite-plugin-pwa@1.0.1(vite@6.3.5(@types/node@22.15.32)(terser@5.51.2))(workbox-build@7.4.1)(workbox-window@7.4.1):
+  vite-plugin-pwa@1.0.1(vite@6.3.5(@types/node@22.15.32)(terser@5.51.2))(workbox-build@7.4.1)(workbox-window@7.3.0):
     dependencies:
       debug: 4.4.3
       pretty-bytes: 6.1.1
       tinyglobby: 0.2.17
       vite: 6.3.5(@types/node@22.15.32)(terser@5.51.2)
       workbox-build: 7.4.1
-      workbox-window: 7.4.1
+      workbox-window: 7.3.0
     transitivePeerDependencies:
       - supports-color
 
@@ -5711,6 +5720,11 @@ snapshots:
       workbox-routing: 7.4.1
 
   workbox-sw@7.4.1: {}
+
+  workbox-window@7.3.0:
+    dependencies:
+      '@types/trusted-types': 2.0.7
+      workbox-core: 7.3.0
 
   workbox-window@7.4.1:
     dependencies:

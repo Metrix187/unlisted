@@ -40,11 +40,12 @@ const LABELS: Record<string, LabelInfo> = {
 // people and pets are the subject, not the room
 export const SUBJECT_LABELS = new Set(["person", "cat", "dog", "bird"]);
 
-export function guessRoom(dets: Detection[], hasPattern: boolean): RoomKind {
+export function guessRoom(dets: Detection[]): RoomKind {
   const has = (l: string) => dets.some((d) => d.label === l);
   if (has("toilet")) return "bathroom";
   if (has("oven") || has("microwave") || has("refrigerator") || has("toaster")) return "kitchen";
-  if (has("sink")) return hasPattern ? "bathroom" : "kitchen";
+  // a sink with no stove or fridge in sight is way more often a bathroom
+  if (has("sink")) return "bathroom";
   if (has("bed")) return "bedroom";
   if (has("couch") || has("tv")) return "living room";
   if (has("dining table")) return "dining room";
@@ -148,7 +149,7 @@ export function buildHeat(inp: HeatInputs): HeatOutput {
     for (let i = 0; i < heat.data.length; i++) heat.data[i] *= 1 - Math.min(1, s[i]);
   }
 
-  const room = guessRoom(inp.detections, patternCoverage > 0.04);
+  const room = guessRoom(inp.detections);
   if (patternCoverage > 0.02) {
     const tiley = room === "bathroom" || room === "kitchen";
     bump(
@@ -165,7 +166,7 @@ export function buildHeat(inp: HeatInputs): HeatOutput {
 // scrubbed one lands near the bottom. it's a vibe meter with math behind it, and the ui says "rough"
 export function exposureScore(heat: FMap): number {
   const m = mean(heat.data);
-  const t = Math.max(0, Math.min(1, (m - WEIGHTS.wall) / 0.3));
+  const t = Math.max(0, Math.min(1, (m - WEIGHTS.wall) / 0.42));
   return Math.round(100 * t ** 0.85);
 }
 
