@@ -320,15 +320,15 @@ async function ensureDino(id: number, slow: boolean) {
   dino = new dinoMod.Dino(dinoMod.parseSafetensors(buf));
 }
 
-function to224(img: RGBA): Float32Array {
-  const s = resizeRGBA(img, 224, 224);
-  const out = new Float32Array(224 * 224 * 3);
+function toPlanar(img: RGBA, w: number, h: number): import("./dino").Planar {
+  const s = resizeRGBA(img, w, h);
+  const out = new Float32Array(w * h * 3);
   for (let i = 0, j = 0; i < s.data.length; i += 4, j += 3) {
     out[j] = s.data[i] / 255;
     out[j + 1] = s.data[i + 1] / 255;
     out[j + 2] = s.data[i + 2] / 255;
   }
-  return out;
+  return { data: out, width: w, height: h };
 }
 
 async function addNoise(id: number, img: RGBA, slow: boolean): Promise<{ img: RGBA; report: NoiseReport }> {
@@ -351,7 +351,9 @@ async function addNoise(id: number, img: RGBA, slow: boolean): Promise<{ img: RG
     };
   }
   const mod = dinoMod!;
-  const x = to224(img);
+  // attack the photo at the size a matcher shrinks it to (short edge 256), not a 224 squash of it
+  const { width: ww, height: wh } = mod.workSize(img.width, img.height);
+  const x = toPlanar(img, ww, wh);
   const { delta } = await mod.matchingNoise(dino!, x, {
     onStep: (s, n) =>
       post({
@@ -362,17 +364,17 @@ async function addNoise(id: number, img: RGBA, slow: boolean): Promise<{ img: RG
         label: `Adding matching noise (${s}/${n})`,
       }),
   });
-  // delta is 224x224x3 over the whole frame. stretch it back over the full-size photo
-  const dmap = { width: 224, height: 224 };
+  // delta is ww x wh x 3 over the whole frame. stretch it back over the full-size photo
+  const dmap = { width: ww, height: wh };
   const out: RGBA = { width: img.width, height: img.height, data: new Uint8ClampedArray(img.data) };
   for (let c = 0; c < 3; c++) {
-    const ch = new Float32Array(224 * 224);
+    const ch = new Float32Array(ww * wh);
     for (let i = 0; i < ch.length; i++) ch[i] = delta[i * 3 + c];
     const up = resizeFMap({ ...dmap, data: ch }, img.width, img.height).data;
     for (let p = 0, i = c; p < up.length; p++, i += 4) out.data[i] = img.data[i] + up[p] * 255;
   }
-  // measure on the actual 8-bit result, not the float version, so the number we show is honest
-  const simAfter = await mod.similarity(dino!, x, to224(out));
+  // measure on the actual 8-bit result, in the attacker's center crop, so the number we show is honest
+  const simAfter = await mod.similarity(dino!, mod.centerCrop(x), mod.centerCrop(toPlanar(out, ww, wh)));
   return {
     img: out,
     report: {

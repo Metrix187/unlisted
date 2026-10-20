@@ -220,56 +220,181 @@ export class Dino {
   }
 }
 
+// hf's dinov2 processor resizes the short edge to 256 and center-crops 224. callers hand matchingNoise the
+// photo already at that short edge, so the attacker's view is a straight slice instead of a guess
+export const WORK = 256;
+
+// the size to hand matchingNoise: short edge WORK, long edge snapped to a multiple of 32 (capped) so the
+// gpu only ever sees a handful of shapes. the delta gets stretched back over the real aspect anyway
+export function workSize(width: number, height: number) {
+  const long = Math.min(
+    2 * WORK,
+    Math.max(WORK, Math.round((Math.max(width, height) * WORK) / Math.min(width, height) / 32) * 32),
+  );
+  return width >= height ? { width: long, height: WORK } : { width: WORK, height: long };
+}
+
+// rgb, 0..1, row-major hwc
+export type Planar = { data: Float32Array; width: number; height: number };
+
 export type NoiseOpts = {
   eps?: number;
   steps?: number;
   alpha?: number;
-  // the perturbation lives on a coarser grid and gets upsampled. smoother noise survives the attacker's
-  // own resize/crop much better than per-pixel speckle does
+  // the perturbation lives on a coarser grid (this many cells along the short edge) and gets upsampled.
+  // smoother noise survives the attacker's own resize/crop much better than per-pixel speckle does
   paramRes?: number;
+  // views per step, run in pairs. the first two are always the dino + clip crops
+  views?: number;
+  momentum?: number;
   onStep?: (step: number, steps: number, sim: number) => void;
 };
 
-// iterative fgsm (basically pgd with sign steps). pushes the image's embedding away from where it started.
-// x224 is [224*224*3] floats in 0..1. returns the 224x224 delta to upsample onto the full image
-export async function matchingNoise(dino: Dino, x224: Float32Array, opts: NoiseOpts = {}) {
+// blur: 0 = none, otherwise squeeze to blur×blur and back up to 224
+type View = { y: number; x: number; h: number; w: number; blur: number };
+
+// center square covering `frac` of the short edge. frac 224/256 = dino's crop, 1 = clip's
+function centerView(W: number, H: number, frac: number): View {
+  const s = Math.round(Math.min(W, H) * frac);
+  return { y: (H - s) >> 1, x: (W - s) >> 1, h: s, w: s, blur: 0 };
+}
+
+// sizes come from a short fixed list on purpose. webgpu builds a pipeline per tensor shape, so random sizes
+// every step would mean shader compiles every step. boring, cacheable shapes only
+const CROPS = [160, 192, 224, 256];
+const BLURS = [112, 160];
+const pick = <T>(a: T[]) => a[Math.floor(Math.random() * a.length)];
+
+// everything we can't predict about the other end: a different crop, someone cropping before they post,
+// the whole frame squashed, jpeg eating the fine detail. doesn't need to be exact, just varied enough
+// that the noise stops leaning on one particular pixel grid
+function randomView(W: number, H: number): View {
+  let v: View;
+  const short = Math.min(W, H);
+  const crops = CROPS.filter((c) => c <= short);
+  if (Math.random() < 0.2 || !crops.length) v = { y: 0, x: 0, h: H, w: W, blur: 0 };
+  else {
+    const s = pick(crops);
+    v = {
+      y: Math.floor(Math.random() * (H - s + 1)),
+      x: Math.floor(Math.random() * (W - s + 1)),
+      h: s,
+      w: s,
+      blur: 0,
+    };
+  }
+  // down-and-back-up is a cheap differentiable stand-in for jpeg / a soft resampler
+  if (Math.random() < 0.5) v.blur = pick(BLURS);
+  return v;
+}
+
+function render(img: tf.Tensor4D, v: View): tf.Tensor4D {
+  const [, H, W] = img.shape;
+  let c = v.y || v.x || v.h !== H || v.w !== W ? tf.slice(img, [0, v.y, v.x, 0], [1, v.h, v.w, 3]) : img;
+  if (v.blur) c = tf.image.resizeBilinear(c, [v.blur, v.blur]);
+  return c.shape[1] === SIZE && c.shape[2] === SIZE ? c : tf.image.resizeBilinear(c, [SIZE, SIZE]);
+}
+
+// the 224 square the attacker's dinov2 actually looks at, given a WORK-sized photo
+export function centerCrop(p: Planar, frac = SIZE / WORK): Float32Array {
+  const v = centerView(p.width, p.height, frac);
+  if (v.w === SIZE) {
+    const out = new Float32Array(SIZE * SIZE * 3);
+    for (let y = 0; y < SIZE; y++) {
+      const s = ((v.y + y) * p.width + v.x) * 3;
+      out.set(p.data.subarray(s, s + SIZE * 3), y * SIZE * 3);
+    }
+    return out;
+  }
+  // odd sizes (tests, tiny photos) go through tf
+  const t = tf.tidy(() => render(tf.tensor4d(p.data, [1, p.height, p.width, 3]), v));
+  const out = t.dataSync() as Float32Array;
+  t.dispose();
+  return out;
+}
+
+// iterative fgsm with momentum, averaged over random views of the photo each step (expectation over
+// transformation). the old version attacked one 224 squash of the frame and hit ~-0.05 self-similarity
+// there, then the attacker's resize + center crop shifted the patch grid and it was basically gone.
+// img is the photo at short edge WORK. returns a same-sized delta to stretch over the full image
+export async function matchingNoise(dino: Dino, img: Planar, opts: NoiseOpts = {}) {
   const eps = opts.eps ?? 4 / 255;
   const steps = opts.steps ?? 10;
   const alpha = opts.alpha ?? 1 / 255;
-  const R = opts.paramRes ?? 112;
-  const x = tf.tensor4d(x224, [1, SIZE, SIZE, 3]);
-  const target = tf.tidy(() => dino.embed(x));
+  const nViews = Math.max(2, opts.views ?? 4);
+  const mu = opts.momentum ?? 1;
+  const { width: W, height: H } = img;
+  const rs = (opts.paramRes ?? 128) / Math.min(W, H);
+  const PH = Math.max(1, Math.round(H * rs));
+  const PW = Math.max(1, Math.round(W * rs));
+
+  const x = tf.tensor4d(img.data, [1, H, W, 3]);
+  const fixed = [centerView(W, H, SIZE / WORK), centerView(W, H, 1)];
+  // push every view away from the clean photo as a matcher would see it. one target for all views keeps
+  // this to a single clean forward pass
+  const [target, dinoClean] = tf.tidy(() => {
+    const e = dino.embed(
+      tf.concat(
+        fixed.map((v) => render(x, v)),
+        0,
+      ),
+    );
+    const m = e.mean(0, true);
+    return [m.div(tf.norm(m, 2, -1, true)), e.slice([0, 0], [1, DIM])];
+  });
   // random start inside the ε-ball (madry-style pgd). starting at δ = 0 is the one place the gradient is
   // exactly zero, since the image is maximally similar to itself there. webgpu's float fuzz happened to
   // kick it loose; cpu/wasm math is exact and the attack just sat there
-  let dp = tf.randomUniform([1, R, R, 3], -eps, eps) as tf.Tensor4D;
+  let dp = tf.randomUniform([1, PH, PW, 3], -eps, eps) as tf.Tensor4D;
+  let mom: tf.Tensor = tf.zerosLike(dp);
 
-  const simOf = (d: tf.Tensor4D) => {
-    const up = tf.image.resizeBilinear(d, [SIZE, SIZE]);
-    const e = dino.embed(tf.clipByValue(x.add(up), 0, 1));
-    return tf.sum(e.mul(target));
-  };
-  const grad = tf.grad((d: tf.Tensor) => simOf(d as tf.Tensor4D));
+  const advOf = (d: tf.Tensor4D) =>
+    tf.clipByValue(x.add(tf.image.resizeBilinear(d, [H, W])), 0, 1) as tf.Tensor4D;
+  let views = fixed;
+  const vg = tf.valueAndGrad((d: tf.Tensor) => {
+    const adv = advOf(d as tf.Tensor4D);
+    const e = dino.embed(
+      tf.concat(
+        views.map((v) => render(adv, v)),
+        0,
+      ),
+    );
+    return tf.sum(tf.matMul(e, target, false, true));
+  });
 
-  let sim = 1;
   for (let s = 0; s < steps; s++) {
-    const g = grad(dp);
-    const next = tf.tidy(() => tf.clipByValue(dp.sub(tf.sign(g).mul(alpha)), -eps, eps)) as tf.Tensor4D;
-    g.dispose();
-    dp.dispose();
+    const all = [...fixed, ...Array.from({ length: nViews - 2 }, () => randomView(W, H))];
+    // two views per pass, max. a batch of 3+ through embed hangs tfjs-webgpu outright on an rtx 4060 (and
+    // takes the driver down with it). no idea which kernel, batch 1 and 2 are fine and fast, so pairs it is
+    let g = tf.zerosLike(dp) as tf.Tensor;
+    let total = 0;
+    for (let i = 0; i < all.length; i += 2) {
+      views = all.slice(i, i + 2);
+      const r = vg(dp);
+      const ng = g.add(r.grad);
+      total += (await r.value.data())[0];
+      for (const t of [r.value, r.grad, g]) t.dispose();
+      g = ng;
+    }
+    const sim = total / all.length;
+    const [nextMom, next] = tf.tidy(() => {
+      // mi-fgsm: l1-normalize then accumulate. stops the sign from flipping around between random views,
+      // and it's known to transfer better to models we never saw
+      const m = mom.mul(mu).add(g.div(tf.mean(tf.abs(g)).add(1e-12)));
+      return [m, tf.clipByValue(dp.sub(tf.sign(m).mul(alpha)), -eps, eps) as tf.Tensor4D];
+    });
+    for (const t of [g, mom, dp]) t.dispose();
+    mom = nextMom;
     dp = next;
-    const simT = tf.tidy(() => simOf(dp));
-    sim = (await simT.data())[0];
-    simT.dispose();
     opts.onStep?.(s + 1, steps, sim);
   }
-  const delta = tf.tidy(() => tf.image.resizeBilinear(dp, [SIZE, SIZE]).reshape([SIZE * SIZE * 3]));
+  // report self-similarity in the view that matters most: the attacker's dino crop
+  const simT = tf.tidy(() => tf.sum(dino.embed(render(advOf(dp), fixed[0])).mul(dinoClean)));
+  const sim = (await simT.data())[0];
+  const delta = tf.tidy(() => tf.image.resizeBilinear(dp, [H, W]).reshape([H * W * 3]));
   const out = (await delta.data()) as Float32Array;
-  delta.dispose();
-  dp.dispose();
-  x.dispose();
-  target.dispose();
-  return { delta: out, sim };
+  for (const t of [simT, delta, dp, mom, x, target, dinoClean]) t.dispose();
+  return { delta: out, width: W, height: H, sim };
 }
 
 export async function similarity(dino: Dino, a224: Float32Array, b224: Float32Array) {

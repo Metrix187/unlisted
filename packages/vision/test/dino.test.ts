@@ -14,6 +14,9 @@ test.skipIf(!weights || !existsSync(weights))(
   "tfjs dinov2 matches pytorch",
   { timeout: 900_000 },
   async () => {
+    // let vitest's "test started" rpc land before the cpu backend hogs the thread for minutes. without this
+    // the reply sits behind the blocked event loop, times out, and vitest exits 1 on a test that passed
+    await new Promise((r) => setTimeout(r, 1000));
     await tf.setBackend("cpu");
     const dino = new Dino(parseSafetensors(new Uint8Array(readFileSync(weights!))));
     const rgb = readFileSync(join(FIXTURES, "dino-ref", "kitchen-224.rgb"));
@@ -24,7 +27,7 @@ test.skipIf(!weights || !existsSync(weights))(
     console.log("cosine vs pytorch:", cos);
     expect(cos).toBeGreaterThan(0.999);
 
-    const { delta, sim } = await matchingNoise(dino, x, { steps: 1 });
+    const { delta, sim } = await matchingNoise(dino, { data: x, width: 224, height: 224 }, { steps: 1 });
     console.log("sim after 1 step:", sim);
     expect(sim).toBeLessThan(0.995);
     const maxAbs = delta.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
