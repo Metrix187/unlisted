@@ -27,14 +27,15 @@ safe".
   curtains often don't register as windows. the 0–100 score is labeled "rough" because it is.
 - **"strip metadata only" doesn't help against photo matching.** the app says this and the numbers agree.
   it's there because metadata (gps in particular) is its own leak, not because it hides the room.
-- **the matching noise, on its own, does nothing we can measure.** it drives DINOv2-small's similarity
-  between your photo and the noised copy to about zero, when both are squashed to 224×224 the way the
-  attack sees them. but a real retrieval pipeline resizes and center-crops differently, and in the eval that
-  alone washes the noise out: 99.7% top-1 for DINOv2-small with noise vs 100% without, and the other two
-  models don't notice it either. where it *does* help is on top of a background scrub (blurred pixels are
-  fragile), taking another 8 to 18 points off. it also needs WebGPU and an 88 MB download, it's untested
-  against what social apps do to images on upload, and adversarial noise in general decays as models get
-  retrained. the toggle stays labeled experimental, and it should be.
+- **the matching noise, on its own, is a dent.** it's trained against the resize-and-crop a normal
+  retrieval pipeline does, so it survives that now, but alone it only takes top-1 from 100% to 91.3% on
+  DINOv2-base and from 99.3% to 95.7% on CLIP. on top of a background scrub it matters a lot more (blurred
+  pixels are fragile): 55.7% → 14.7% on DINOv2-base, 38.7% → 24.0% on CLIP. it's aimed at DINOv2-small,
+  and the numbers fall off the further the attacker's model is from that family (CLIP gets about half the
+  benefit), so someone using a model we never tried may get less. it adds about a second per photo, needs
+  WebGPU and an 88 MB download, is untested against what social apps do to images on upload (heavier
+  jpeg, resizing to odd sizes), and adversarial noise in general decays as models get retrained. the
+  toggle stays labeled experimental, and it should be.
 - **output is a jpeg capped at 2560 px** on the long side. huge originals get shrunk.
 - **the share-sheet entry** only exists once the app is installed. if a browser somehow posted a shared
   photo before the service worker was running, that POST would hit our static host (cloudflare pages,
@@ -88,11 +89,12 @@ the numbers in [eval/results/leaderboard.md](../eval/results/leaderboard.md) are
 - **when scrub can't find a person it blurs the whole photo**, and those queries (55 of 300) basically never
   match. that flatters the headline scrub number. the leaderboard splits it out: with a person kept, the
   rate is 66.5% (DINOv2-base) and 47.3% (CLIP), not 55.7% and 38.7%.
-- **matching noise was measured with the noise targeting DINOv2-small at 224×224 on the whole frame.**
-  in its own terms it works (mean self-similarity −0.05). against a matcher that resizes and center-crops
-  like normal ones do, it doesn't: −0.3 points for DINOv2-small, −0.3 for DINOv2-base, −1.7 for CLIP.
-  training it against the attacker's preprocessing (expectation over resizes/crops) is the obvious next
-  thing to try. until that shows numbers, treat the toggle as decoration.
+- **matching noise is white-box against DINOv2-small**, so that column (33.7% noise-only, 0.7% with
+  scrub) is its best case, not a result. the first version attacked a 224×224 squash of the whole frame
+  and a matcher's resize + center crop washed it out completely (−0.3 points on DINOv2-base). averaging
+  the attack over the crops and resizes matchers actually use fixed that. the eval's attacker uses exactly
+  those standard crops, though, so a matcher with unusual preprocessing (tiling, multi-crop, heavy
+  re-compression first) wasn't tested and may undo more of it.
 - **one seed, one run.** no error bars. with 300 queries, differences of a few points are noise.
 - **the eval itself caught a bug**: on the wasm backend the noise was a silent no-op until we switched to a
   random start. it's fixed and both backends are verified, but it's a good reminder that "the toggle was on"

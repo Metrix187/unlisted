@@ -12,8 +12,8 @@ lower is better for you.
 | strip metadata only | 100.0% | 100.0% | 100.0% | 99.3% | 100.0% | 100.0% | 100.0% | 100.0% | 100.0% |
 | blur the hot spots | 98.3% | 99.7% | 100.0% | 88.3% | 94.0% | 95.3% | 98.3% | 98.7% | 99.0% |
 | scrub background (default) | 55.7% | 66.0% | 74.7% | 38.7% | 43.7% | 50.0% | 46.3% | 59.0% | 66.0% |
-| matching noise only | 99.7% | 100.0% | 100.0% | 97.7% | 99.3% | 100.0% | 99.7% | 100.0% | 100.0% |
-| scrub background + matching noise | 39.0% | 47.7% | 55.7% | 30.7% | 36.3% | 42.3% | 28.3% | 35.7% | 42.7% |
+| matching noise only | 91.3% | 96.3% | 99.0% | 95.7% | 98.3% | 99.7% | 33.7% | 43.3% | 51.0% |
+| scrub background + matching noise | 14.7% | 22.7% | 31.0% | 24.0% | 31.3% | 37.7% | 0.7% | 2.0% | 3.7% |
 
 ## change vs. no defense (top-1)
 
@@ -22,8 +22,8 @@ lower is better for you.
 | strip metadata only | +0.0 pts | +0.0 pts | +0.0 pts |
 | blur the hot spots | -1.7 pts | -11.0 pts | -1.7 pts |
 | scrub background (default) | -44.3 pts | -60.7 pts | -53.7 pts |
-| matching noise only | -0.3 pts | -1.7 pts | -0.3 pts |
-| scrub background + matching noise | -61.0 pts | -68.7 pts | -71.7 pts |
+| matching noise only | -8.7 pts | -3.7 pts | -66.3 pts |
+| scrub background + matching noise | -85.3 pts | -75.3 pts | -99.3 pts |
 
 ## scrub, split by whether it found a person (top-1)
 
@@ -31,15 +31,15 @@ lower is better for you.
 |---|---|---|---|
 | scrub background (default): person found, room blurred (n=245) | 66.5% | 47.3% | 55.9% |
 | scrub background (default): no person found, whole photo blurred (n=55) | 7.3% | 0.0% | 3.6% |
-| scrub background + matching noise: person found, room blurred (n=245) | 47.8% | 37.6% | 34.7% |
+| scrub background + matching noise: person found, room blurred (n=245) | 18.0% | 29.4% | 0.8% |
 | scrub background + matching noise: no person found, whole photo blurred (n=55) | 0.0% | 0.0% | 0.0% |
 
-**matching noise only:** applied to 300 photos, skipped on 0. mean dinov2-small self-similarity after noise: -0.047 (1.0 = untouched). median time per photo incl. analysis: 3.0s on webgpu.
+**matching noise only:** applied to 300 photos, skipped on 0. mean dinov2-small self-similarity after noise, measured in the app on the attacker's 256→224 center crop: 0.203 (1.0 = untouched). median time per photo incl. analysis: 4.1s on webgpu.
 
-**scrub background + matching noise:** applied to 300 photos, skipped on 0. mean dinov2-small self-similarity after noise: -0.141 (1.0 = untouched). median time per photo incl. analysis: 3.4s on webgpu.
+**scrub background + matching noise:** applied to 300 photos, skipped on 0. mean dinov2-small self-similarity after noise, measured in the app on the attacker's 256→224 center crop: -0.066 (1.0 = untouched). median time per photo incl. analysis: 4.8s on webgpu.
 
 ## how to read this
 
 - `dinov2-base` and `clip-b32` are the honest attackers: off-the-shelf models we didn't aim anything at.
-- `dinov2-small` is the exact model matching noise attacks, so its row is the noise's best case, not a fair test. compare it to the other two to see how well the noise transfers, and to the noise's own self-similarity number to see how much of it survives the attacker's resize + center crop.
+- `dinov2-small` is the exact model matching noise attacks, so its row is the noise's best case, not a fair test. compare it to the other two to see how well the noise transfers. the self-similarity number above is the app's own measurement on the same crop before jpeg; the dinov2-small row is what's left after jpeg + the attacker's own resampling.
 - this setup is *easier* for the attacker than real life (the query is a re-shot copy of the indexed photo, not a different photo taken months later). see `docs/LIMITATIONS.md`.
