@@ -5,7 +5,7 @@
 //
 // edge is the default channel because it's the one playwright browser that gets a real webgpu adapter
 // headless on windows. without webgpu the noise defense gets skipped, same as in the app.
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, appendFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -69,12 +69,22 @@ if (!existsSync(join(ROOT, "apps/scrub/dist-harness/harness.html"))) {
   console.error("build the harness first: HARNESS=1 pnpm --filter @unlisted/scrub build");
   process.exit(1);
 }
+const base = `http://localhost:${PORT}`;
+// an orphaned preview from an earlier run (or another checkout) on this port means strictPort quietly
+// fails and we'd be measuring whatever code *that* one serves. ask me how i know
+const busy = await fetch(base).then(
+  (r) => (r.body?.cancel(), true),
+  () => false,
+);
+if (busy) {
+  console.error(`something is already listening on :${PORT}. kill it or pass --port`);
+  process.exit(1);
+}
 const server = spawn("pnpm", ["--filter", "@unlisted/scrub", "exec", "vite", "preview", "--outDir", "dist-harness", "--port", String(PORT), "--strictPort"], {
   cwd: ROOT,
   shell: true,
   stdio: "ignore",
 });
-const base = `http://localhost:${PORT}`;
 
 try {
   await waitFor(`${base}/harness.html`);
@@ -120,6 +130,8 @@ try {
   await Promise.all(pages.map(worker));
   await ctx.close();
 } finally {
-  server.kill();
-  if (process.platform === "win32" && server.pid) spawn("taskkill", ["/pid", String(server.pid), "/t", "/f"], { stdio: "ignore" });
+  // taskkill /t first: killing the cmd.exe wrapper on its own leaves vite running with no parent, and then
+  // there's no tree left for /t to walk. that's how the orphans got there in the first place
+  if (process.platform === "win32" && server.pid) spawnSync("taskkill", ["/pid", String(server.pid), "/t", "/f"], { stdio: "ignore" });
+  else server.kill();
 }
