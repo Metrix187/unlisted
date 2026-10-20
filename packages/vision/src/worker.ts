@@ -87,8 +87,14 @@ async function loadMediapipe(id: number) {
     const mod = await import(/* @vite-ignore */ `${assetBase}mediapipe/vision_wasm_internal.mjs`);
     scope.ModuleFactory = mod.default;
   };
+  // mediapipe sniffs the user agent to decide whether OffscreenCanvas exists, and anything that looks like
+  // safari without "Version/17+" (ios 16, but also chrome/firefox/edge on iphone, whose UAs say CriOS/FxiOS)
+  // gets document.createElement("canvas"). there is no document in a worker, so the photo just failed to
+  // open on iphones. handing it a canvas skips the sniff entirely
+  const canvas = () => new OffscreenCanvas(1, 1);
   await setFactory();
   segmenter = await ImageSegmenter.createFromOptions(fileset, {
+    canvas: canvas(),
     baseOptions: { modelAssetBuffer: segBuf, delegate: "CPU" },
     runningMode: "IMAGE",
     outputCategoryMask: false,
@@ -96,6 +102,7 @@ async function loadMediapipe(id: number) {
   });
   await setFactory();
   outliner = await ImageSegmenter.createFromOptions(fileset, {
+    canvas: canvas(),
     baseOptions: { modelAssetBuffer: outBuf, delegate: "CPU" },
     runningMode: "IMAGE",
     outputCategoryMask: false,
@@ -103,6 +110,7 @@ async function loadMediapipe(id: number) {
   });
   await setFactory();
   detector = await ObjectDetector.createFromOptions(fileset, {
+    canvas: canvas(),
     baseOptions: { modelAssetBuffer: detBuf, delegate: "CPU" },
     runningMode: "IMAGE",
     scoreThreshold: 0.3,
