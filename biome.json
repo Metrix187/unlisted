@@ -7,6 +7,8 @@
       "**/dev-dist/**",
       "**/node_modules/**",
       "**/.wrangler/**",
+      "**/test-results/**",
+      "**/playwright-report/**",
       "eval/**",
       "**/fixtures/**",
       "**/*.md"
