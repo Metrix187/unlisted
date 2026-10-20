@@ -276,7 +276,7 @@ def leaderboard(results: dict, n_index: int, n_queries: int, defenses: list[str]
             lines += [
                 "",
                 f"**{LABELS[d]}:** applied to {s['applied']} photos, skipped on {s['skipped']}. "
-                + (f"mean dinov2-small self-similarity after noise: {s['mean_self_similarity']:.3f} (1.0 = untouched). " if s["mean_self_similarity"] is not None else "")
+                + (f"mean dinov2-small self-similarity after noise, measured in the app on the attacker's 256→224 center crop: {s['mean_self_similarity']:.3f} (1.0 = untouched). " if s["mean_self_similarity"] is not None else "")
                 + (f"median time per photo incl. analysis: {s['median_ms'] / 1000:.1f}s on webgpu." if s["median_ms"] else ""),
             ]
     lines += [
@@ -285,8 +285,9 @@ def leaderboard(results: dict, n_index: int, n_queries: int, defenses: list[str]
         "",
         "- `dinov2-base` and `clip-b32` are the honest attackers: off-the-shelf models we didn't aim anything at.",
         "- `dinov2-small` is the exact model matching noise attacks, so its row is the noise's best case, not a "
-        "fair test. compare it to the other two to see how well the noise transfers, and to the noise's own "
-        "self-similarity number to see how much of it survives the attacker's resize + center crop.",
+        "fair test. compare it to the other two to see how well the noise transfers. the self-similarity number "
+        "above is the app's own measurement on the same crop before jpeg; the dinov2-small row is what's left "
+        "after jpeg + the attacker's own resampling.",
         "- this setup is *easier* for the attacker than real life (the query is a re-shot copy of the indexed "
         "photo, not a different photo taken months later). see `docs/LIMITATIONS.md`.",
         "",

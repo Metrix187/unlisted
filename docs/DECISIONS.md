@@ -20,10 +20,21 @@ each section.
   pixels, so i ported the model (patch embed, 12 blocks, layer scale, the bicubic position-grid resize) to
   tfjs ops and load the same `facebook/dinov2-small` safetensors from hugging face. parity test against
   pytorch: cosine 1.0000 on the fixture. pinned to commit `ed25f3a3`.
-- **the attack:** iterative fgsm (sign steps, i.e. pgd-lite) on the cls embedding, maximizing cosine
-  distance from the original. ε = 4/255, 10 steps, α = 1/255. the perturbation lives on a 112×112 grid and
-  gets bilinearly upsampled, because smooth noise survives the attacker's own resize/crop better than
-  per-pixel speckle. whole frame squashed to 224×224 (no center crop) so the edges get covered too.
+- **the attack:** iterative fgsm with momentum (mi-fgsm) on the cls embedding, maximizing cosine distance
+  from the original. ε = 4/255, 10 steps, α = 1/255, random start. the perturbation lives on a coarse grid
+  (128 cells on the short edge) and gets bilinearly upsampled, because smooth noise survives resampling
+  better than per-pixel speckle.
+- **it's trained against the attacker's preprocessing (expectation over transformation).** the first
+  version attacked one 224×224 squash of the whole frame. it drove self-similarity to ~−0.05 *in that
+  view*, but a normal pipeline (short edge to 256, center-crop 224) lines the patches up differently and
+  the effect was gone: 0.91 self-similarity in hf's crop, −0.3 points in the eval. now the photo goes in
+  at short edge 256 and every step averages the gradient over 4 views: dinov2's center crop, clip's
+  center crop, and two random ones (a random square crop or the whole frame squashed, half of them run
+  through a down-and-up resize as a stand-in for jpeg).
+- **views run two at a time.** a batch of 3 or more through the tfjs dinov2 hangs tfjs-webgpu on the rtx
+  4060 (and takes the driver down with it until it recovers on its own). batches of 1 and 2 are fine and
+  ~0.1 s each forward+backward. didn't chase which kernel. all the crop/blur sizes and the work width come
+  from short fixed lists too, so webgpu isn't compiling new shaders every step.
 - **the attack starts from a random point in the ε-ball**, not from zero. at δ = 0 the image is as similar
   to itself as it can get, so the gradient there is exactly zero. webgpu's float fuzz happened to nudge it
   off that spot; the wasm backend computes it exactly and the "noise" came out as a no-op (similarity
@@ -115,8 +126,8 @@ each section.
 - **headless edge, not chromium,** drives the harness, because it's the only playwright channel that gets a
   real webgpu adapter headless on windows. chromium's headless gets swiftshader.
 - **noise defenses run one page at a time.** three headless pages each holding dinov2 on an 8 gb laptop gpu
-  wedged the gpu driver hard enough that `nvidia-smi` hung (it recovered on its own). one page does ~3 s
-  per photo, which is fine.
+  wedged the gpu driver hard enough that `nvidia-smi` hung (it recovered on its own). one page does ~4–5 s
+  per photo with noise on, which is fine.
 - **dinov2-small is in the attacker list on purpose:** it's the model the noise targets, so it shows the
   noise's best case next to the two models it wasn't aimed at.
 

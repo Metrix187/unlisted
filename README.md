@@ -25,8 +25,9 @@ the short version, the long one is in [docs/LIMITATIONS.md](docs/LIMITATIONS.md)
 - footprint mostly can't look for you. the listing sites block automated lookups, we respect that, so for
   most sites it hands you a link and the takedown steps instead of a photo grid. the demo address shows what
   it looks like when a site does answer.
-- the matching noise is an experiment, and on its own it doesn't work: the attacker's normal resize and
-  crop wash it out. stacked on a scrub it helps a bit (see the numbers below).
+- the matching noise is still an experiment. on its own it only dents the number. stacked on a scrub it
+  helps a lot against DINOv2-style matchers and less against CLIP (see the numbers below). it's aimed at
+  one model family, and needs WebGPU.
 
 ## is this real?
 
@@ -43,8 +44,9 @@ top-1 hit rate (how often the attacker's first guess is the right room), 300 que
 | blur the hot spots | 98.3% | 88.3% |
 | **scrub background** (the big button) | **55.7%** | **38.7%** |
 | ↳ when it found a person to keep (245 of 300) | 66.5% | 47.3% |
-| matching noise only | 99.7% | 97.7% |
-| scrub background + matching noise | 39.0% | 30.7% |
+| matching noise only | 91.3% | 95.7% |
+| scrub background + matching noise | 14.7% | 24.0% |
+| ↳ when it found a person to keep (245 of 300) | 18.0% | 29.4% |
 
 what that says, plainly:
 
@@ -53,8 +55,11 @@ what that says, plainly:
   three. it's much better than nothing. it is not invisibility.
 - **metadata stripping does nothing against this kind of matching.** zero points.
 - **hot-spot blur barely helps.** keeping the room keeps most of what a matcher needs.
-- **matching noise alone does nothing measurable**, even against the exact model it targets, because the
-  matcher's own resize-and-crop washes it out. on top of a scrub it takes off another 8–17 points.
+- **matching noise alone is a dent, not a defense.** it's trained against the resize-and-crop a matcher
+  does, so it survives that now, but DINOv2-base still finds the room 91% of the time and CLIP 96%. on top
+  of a scrub it's a different story against DINOv2-base (55.7% → 14.7%), and a smaller one against CLIP
+  (38.7% → 24.0%). that gap is the honest bit: the noise is aimed at DINOv2-small, base is its bigger
+  sibling, CLIP is a different family. an attacker on some other model gets less of the benefit.
 - and this test is *easier* for the attacker than real life in one way (the query is a re-shot copy of the
   indexed photo) and harder in another (real indexes are millions of photos, ours is 3,000). see
   [LIMITATIONS](docs/LIMITATIONS.md#the-eval).
