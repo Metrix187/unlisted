@@ -13,6 +13,10 @@ your address.
 
 both are installable PWAs. there are no accounts, no settings, and no analytics.
 
+**try them:** [unlisted-scrub.pages.dev](https://unlisted-scrub.pages.dev) ·
+[unlisted-footprint.pages.dev](https://unlisted-footprint.pages.dev) (the demo address shows what a
+lookup looks like without using yours).
+
 ## what it can't do
 
 the short version, the long one is in [docs/LIMITATIONS.md](docs/LIMITATIONS.md):
