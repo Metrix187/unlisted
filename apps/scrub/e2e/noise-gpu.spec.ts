@@ -17,7 +17,7 @@ test("matching noise stays local too", async ({ context, page }) => {
   await page.getByTestId("t-noise").check();
   await page.getByTestId("scrub").click();
   await expect(page.getByTestId("before-after")).toBeVisible({ timeout: 9 * 60_000 });
-  await expect(page.getByTestId("noise-line")).toContainText("match to your original");
+  await expect(page.getByTestId("noise-line")).toContainText("DINOv2-small embedding cosine similarity");
   assertClean(seen);
   // the model came from hugging face, and that's the only reason we talked to it
   expect(seen.some((s) => s.host === "huggingface.co")).toBe(true);
