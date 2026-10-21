@@ -3,6 +3,7 @@ import { useState } from "preact/hooks";
 import type { Kinds } from "../App";
 import { type LookupResult, type Photo, type SiteResult, thumbSrc } from "../api";
 import { type Kind, classifyImg } from "../lib/classify";
+import { DemoNotice, isDemoAddress } from "./DemoNotice";
 
 type Props = {
   result: LookupResult;
@@ -67,11 +68,13 @@ export function Grid({ result, kinds, onKind, onNext, onBack }: Props) {
 
   return (
     <Screen title="Footprint" step="2 of 3">
+      <DemoNotice address={result.address} />
       <p class="u-muted small">{result.address}</p>
 
       {total > 0 ? (
         <h2 class="headline" data-testid="headline">
-          We found {total} photo{total === 1 ? "" : "s"} of your home on {withPhotos.length} site
+          {isDemoAddress(result.address) ? "Demo shows" : "We found"} {total} photo{total === 1 ? "" : "s"}{" "}
+          {isDemoAddress(result.address) ? "from fixtures" : "for this address"} on {withPhotos.length} site
           {withPhotos.length === 1 ? "" : "s"}.{" "}
           {pending > 0 ? (
             <span class="u-muted">Checking which are inside…</span>
@@ -131,11 +134,11 @@ export function Grid({ result, kinds, onKind, onNext, onBack }: Props) {
       ))}
 
       <Button variant="primary" big onClick={onNext} data-testid="takedown">
-        Get these taken down
+        See removal guides
       </Button>
       <p class="small u-muted">
-        Some photos load straight from the listing site, so that site sees a visit. It doesn't see your
-        address.
+        Some photos load directly from the listing site's CDN, which sees your IP and requested image URL. We
+        omit the referrer. Opening a search link shares the address with that search service.
       </p>
       <Button variant="link" onClick={onBack}>
         Look up a different address

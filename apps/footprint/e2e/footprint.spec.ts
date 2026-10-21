@@ -14,10 +14,11 @@ async function find(page: Page, address = DEMO) {
 test("demo address: the grid, the count, and who blocked us", async ({ page }) => {
   await find(page, "123 example street springfield illinois 62701");
   await expect(page.getByTestId("headline")).toHaveText(
-    "We found 28 photos of your home on 4 sites. 22 are interior.",
+    "Demo shows 28 photos from fixtures on 4 sites. 22 are interior.",
     { timeout: 30_000 },
   );
   await expect(page.getByTestId("tile")).toHaveCount(28);
+  await expect(page.getByRole("note")).toContainText("Fixture demo");
   for (const site of ["zillow", "redfin", "realtor", "trulia"])
     await expect(page.getByTestId(`site-${site}`)).toBeVisible();
   await expect(page.getByText("Homes.com blocked us — open it yourself:")).toBeVisible();
@@ -27,6 +28,7 @@ test("demo address: the grid, the count, and who blocked us", async ({ page }) =
 test("take-down cards, and 'mark as requested' sticks without storing the address", async ({ page }) => {
   await find(page);
   await page.getByTestId("takedown").click();
+  await expect(page.getByRole("note")).toContainText("Fixture demo");
   for (const s of ["zillow", "redfin", "realtor", "trulia", "homes", "apartments", "streetview"])
     await expect(page.getByTestId(`card-${s}`)).toBeVisible();
   await expect(page.getByTestId("card-zillow")).toContainText("9 photos, 7 of the inside");

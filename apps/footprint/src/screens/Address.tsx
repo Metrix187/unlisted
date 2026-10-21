@@ -7,7 +7,10 @@ export function Address({ busy, error, onFind, onPhoto }: Props) {
   const [value, setValue] = useState("");
   return (
     <Screen title="Footprint" step="1 of 3">
-      <p class="lead">See every listing photo of your home that's still online, and get them taken down.</p>
+      <p class="lead">
+        Find links to check listing sites and guidance for requesting photo removal. Automated lookups are
+        largely blocked; we cannot find every photo or guarantee removal.
+      </p>
 
       <form
         class="addr"
@@ -31,14 +34,14 @@ export function Address({ busy, error, onFind, onPhoto }: Props) {
           disabled={busy}
         />
         <Button variant="primary" big type="submit" disabled={busy || !value.trim()} data-testid="find">
-          {busy ? "Looking…" : "Find photos of my home"}
+          {busy ? "Looking…" : "Check listing sites"}
         </Button>
       </form>
 
       <p class="u-privacy" data-testid="privacy">
-        We use your address to look on the listing sites, then forget it. It's never saved and never logged.
-        What we keep for a day is a scrambled fingerprint of it (so a second look is faster) and the photo
-        links we found.
+        Your address is sent to a Cloudflare Worker for lookup. Our code does not store or log the address;
+        Cloudflare still handles the request. We cache a SHA-256 address hash and result data for 24 hours.
+        The hash is not anonymous: addresses can be guessed.
       </p>
       <p class="small u-muted">
         You can also paste a Zillow, Redfin, Realtor.com, or Trulia link. Want to try it first? Use{" "}
