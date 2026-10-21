@@ -1,21 +1,33 @@
 # unlisted
 
-two small, on-device tools for one specific problem: someone takes a photo you posted from inside your home,
-runs it through an image-retrieval tool (the Raven / GeoSpy kind of thing), and matches it against the
-rental and real-estate listing photos of your place that are still floating around online. that gives them
-your address.
+**Reduce the background clues in photos you share from home.**
+
+Unlisted explores one specific risk: a photo's visible room details may be matched to rental or
+real-estate listing photos associated with an address. Scrub reduces those details; Footprint helps
+you check listing sites manually and find removal guidance. Neither tool can tell you that you are safe.
+We have not tested these defenses against Raven, GeoSpy, or other proprietary systems.
 
 - **Scrub** (`apps/scrub`) — pick a photo, see what in the room would give it away, tap once to blur the
   room out from behind you, share. runs entirely in your browser. the photo never leaves your device.
-- **Footprint** (`apps/footprint` + `workers/footprint-api`) — type your address, see the listing photos
-  of your home that are still up, get a card per site with how to get them taken down. the address is used
-  for the lookup and then forgotten.
+- **Footprint** (`apps/footprint` + `workers/footprint-api`) — manual search links and per-site removal
+  guides. Automated lookups are largely blocked. Addresses are sent to a Cloudflare Worker for lookup;
+  the code avoids storing the address, but Cloudflare handles the request. This part is not on-device.
+  The made-up demo address uses fixtures, not live listing results.
 
 both are installable PWAs. there are no accounts, no settings, and no analytics.
+
+Scrub processes photo pixels locally after model downloads (~26 MB initially; ~88 MB extra for
+experimental matching noise). Its heat map and score are heuristics, not calibrated security assessments.
+Review the subject edges and result before sharing. See [limitations](docs/LIMITATIONS.md).
 
 **try them:** [unlisted-scrub.pages.dev](https://unlisted-scrub.pages.dev) ·
 [unlisted-footprint.pages.dev](https://unlisted-footprint.pages.dev) (the demo address shows what a
 lookup looks like without using yours).
+
+**source and feedback:** [repository](https://github.com/Metrix187/unlisted) ·
+[report a reproducible issue](https://github.com/Metrix187/unlisted/issues).
+Please include your browser/version and safe reproduction steps. Do not post home addresses,
+private photos, or other people's personal information in public issues.
 
 ## what it can't do
 

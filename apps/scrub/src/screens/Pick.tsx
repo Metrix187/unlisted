@@ -27,13 +27,17 @@ export function Pick({ photo, busy, error, modelsReady, onPick, onNext }: Props)
         Your photo stays on this device. Nothing gets uploaded, not to us, not to anyone. All the work happens
         right here in your browser.
       </p>
+      <p class="small u-muted">
+        First use downloads about 26 MB of models, then caches them in this browser. Highlights and scores are
+        rough heuristics; they cannot tell you whether a photo is safe to share.
+      </p>
 
       {photo ? (
         <>
           <Photo
             src={photo.url}
             heat={photo.analysis.heat}
-            alt="Your photo, with the identifying parts glowing red"
+            alt="Your photo, with heuristic room-clue highlights"
             testId="photo"
           />
           <p class="caption" data-testid="caption">

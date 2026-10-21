@@ -46,10 +46,11 @@ export function Done({ photo, outcome, onBack, onStartOver }: Props) {
         {noise &&
           (noise.applied ? (
             <p class="small u-muted" data-testid="noise-line">
-              Matching noise: the model we tested against now rates this a{" "}
-              {Math.max(0, Math.round(noise.similarityAfter * 100))}% match to your original (it was 100%).
-              Heads up: in our own tests this alone stopped fewer than 1 match in 10. On top of the background
-              scrub it helps a lot more, mostly against matching tools built like the one it targets.
+              Experimental matching noise applied. DINOv2-small embedding cosine similarity after noise:{" "}
+              {noise.similarityAfter.toFixed(3)}. This model-specific measurement is not a probability of
+              identification or a security rating. In the 245 person-preserving queries in our 3,000-photo
+              Open Images benchmark, scrub plus noise had top-1 retrieval hit rates of 18.0% on DINOv2-base
+              and 29.4% on CLIP ViT-B/32. Proprietary systems and social-platform recompression are untested.
             </p>
           ) : (
             <Note>Matching noise skipped: {noise.reason}</Note>

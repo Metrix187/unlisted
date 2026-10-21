@@ -3,6 +3,7 @@ import { useEffect, useState } from "preact/hooks";
 import type { Kinds } from "../App";
 import type { LookupResult, SiteResult } from "../api";
 import { addressKey, getRequested, renderGuide, setRequested } from "../lib/removal";
+import { DemoNotice } from "./DemoNotice";
 
 function Card({
   site,
@@ -86,6 +87,7 @@ export function TakeDown({
   );
   return (
     <Screen title="Footprint" step="3 of 3">
+      <DemoNotice address={result.address} />
       <p class="lead">
         One card per site. Start at the top. The checkboxes stay on this device only, so you can come back and
         see what's left.
