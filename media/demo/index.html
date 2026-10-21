@@ -304,9 +304,9 @@ function chip(html, cls = "") { return el("div", "chip " + cls, stage, html); }
 // ---------- scene 1 + 2: the post, then the listing grid ----------
 const A = "assets/";
 const post = el("div", "card");
-const postH = el("div", "post-h", post, '<i class="av"></i>you<span>· just now</span>');
+const postH = el("div", "post-h", post, '<i class="av"></i>sample<span>· illustration</span>');
 const postImg = img(A + "kitchen-yourphoto.jpg", post);
-const postF = el("div", "post-f", post, `${ICON.heart}${ICON.comment}${ICON.send}<span style="margin-left:auto">128 likes</span>`);
+const postF = el("div", "post-f", post, `${ICON.heart}${ICON.comment}${ICON.send}<span style="margin-left:auto">Illustration</span>`);
 const POST_AR = 557 / 481;
 function layoutPost(w) {
   post.style.width = w + "px";
@@ -537,8 +537,8 @@ function phoneChip(html, fx, fy, side, a, b, cls) {
 phoneChip('<i style="background:#e5484d;color:#e5484d"></i>the patterns', 0.9, 0.22, "r", 15.0, 16.5);
 phoneChip('<i style="background:#e5484d;color:#e5484d"></i>the windows', 0.1, 0.3, "l", 15.25, 16.5);
 phoneChip('<i style="background:#e5484d;color:#e5484d"></i>the table', 0.9, 0.38, "r", 15.5, 16.5);
-phoneChip('30<span class="m">/ 100 matchable</span>', 0.1, 0.62, "l", 15.8, 16.5);
-phoneChip('<i style="background:#3ccf8e;color:#3ccf8e"></i>0<span class="m">/ 100 now</span>', 0.9, 0.3, "r", 19.7, 22.8);
+phoneChip('30<span class="m">/ 100 · rough heuristic</span>', 0.1, 0.62, "l", 15.8, 16.5);
+phoneChip('<i style="background:#3ccf8e;color:#3ccf8e"></i>rough score: 0<span class="m">/ 100</span>', 0.9, 0.3, "r", 19.7, 22.8);
 phoneChip(`${ICON.lock}0 bytes uploaded`, 0.1, 0.66, "l", 20.4, 22.8);
 phoneChip('<i style="background:#7b9cff;color:#7b9cff"></i>28 photos<span class="m">· 4 sites</span>', 0.9, 0.2, "r", 38.6, 40.2);
 phoneChip('<i style="background:#e5484d;color:#e5484d"></i>22 of them inside', 0.1, 0.42, "l", 38.95, 40.2);
@@ -546,10 +546,10 @@ phoneChip('<i style="background:#3ccf8e;color:#3ccf8e"></i>a take-down card per 
 
 caption({
   kicker: "Scrub",
-  title: "Scrub hides the room. *Not you.*",
+  title: "Scrub blurs the room. *Review what stays.*",
   subs: [
-    { text: "It shows what a matcher would lock onto, then blurs the room out from behind you.", at: 14.8, out: 19.5 },
-    { text: "All of it runs on your phone. <b>The photo never leaves it.</b>", at: 19.8 },
+    { text: "Rough highlights suggest room clues. Check subject edges; the score is not a security rating.", at: 14.8, out: 19.5 },
+    { text: "Photo pixels stay in your browser. About 26 MB of models download and cache first.", at: 19.8 },
   ],
   at: 12.85, out: 22.9,
 });
@@ -567,7 +567,7 @@ img(A + "noise-amp.png", nlayer);
 const nline = el("div", "abs", ncard);
 nline.style.cssText += "top:0;height:100%;width:3px;margin-left:-1.5px;background:#fff;box-shadow:0 0 24px 6px rgba(180,140,255,0.9)";
 const nchip1 = chip(`${ICON.wave}amplified 18×<span class="m">so you can see it</span>`);
-const nchip2 = chip('<i style="background:#3ccf8e;color:#3ccf8e"></i>at 1×: what everyone sees');
+const nchip2 = chip('<i style="background:#3ccf8e;color:#3ccf8e"></i>example at normal scale');
 const ny = N.y + (L.text.align === "center" ? (H - nh) / 2 - N.y : 0);
 on((t) => {
   const p = P(t, 23.45, 24.3, E.outQuint), q = P(t, 27.9, 28.5, E.inOut);
@@ -582,18 +582,17 @@ on((t) => {
   style(nchip2, { x: N.x + 28, y: ny + 28, s: lerp(0.85, 1, c2), o: clamp(c2 * 1.5) });
 });
 caption({
-  kicker: "Matching noise · optional",
-  title: "Plus noise you *can't see,* aimed at the matchers.",
-  subs: [{ text: "Tiny pixel nudges, trained against the crops and resizes matching tools really use.", at: 25.0 }],
+  kicker: "Matching noise · experimental",
+  title: "Pixel noise, *model-specific.*",
+  subs: [{ text: "Needs WebGPU + an 88 MB model. Proprietary systems and social-platform recompression are untested.", at: 25.0 }],
   at: 23.35, out: 27.9,
 });
 
 // ---------- scene 5: the numbers ----------
 const C = L.chart;
 const ROWS = [
-  { name: "No defense", v: 100, clip: 99.3, color: "linear-gradient(90deg,#b8353a,#e5484d)" },
-  { name: "Scrub", v: 55.7, clip: 38.7, color: "linear-gradient(90deg,#5574e0,#7b9cff)" },
-  { name: "Scrub + noise", v: 14.7, clip: 24.0, color: "linear-gradient(90deg,#24a06a,#3ccf8e)" },
+  { name: "Scrub · person found", v: 66.5, clip: 47.3, color: "linear-gradient(90deg,#5574e0,#7b9cff)" },
+  { name: "Scrub + noise · person found", v: 18.0, clip: 29.4, color: "linear-gradient(90deg,#24a06a,#3ccf8e)" },
 ];
 const legend = el("div", "legend", stage, '<span><i style="height:0.75em;background:#cfd2dc"></i>DINOv2-base</span><span><i style="height:0.22em"></i>CLIP</span>');
 const chartTop = C.y + (L.text.align === "center" ? (H - (ROWS.length * C.row + 60)) / 2 - C.y : 0);
@@ -610,7 +609,7 @@ const rowEls = ROWS.map((r, i) => {
   const cv = el("div", "clipv", row, `CLIP ${r.clip.toFixed(1)}%`);
   return { ...r, row, v: r.v, val: lab.querySelector(".v"), fill, f2, cv, y: chartTop + 60 + i * C.row };
 });
-const foot = el("div", "sub", stage, "Lower is better. <b>A big help, not invisibility.</b>");
+const foot = el("div", "sub", stage, "One run; re-shot copies. <b>Not a real-world identification probability.</b>");
 foot.style.cssText += `position:absolute;width:${C.w}px;max-width:none`;
 on((t) => {
   const q = P(t, 35.4, 36.0, E.inOut);
@@ -631,28 +630,29 @@ on((t) => {
   style(foot, { x: C.x, y: chartTop + 60 + ROWS.length * C.row + 4 + (1 - f) * 16, o: f * (1 - q) });
 });
 caption({
-  kicker: "Does it work?",
-  title: "We attacked it *ourselves.*",
-  subs: [{ text: "300 photos against a 3,000-photo index. How often the matcher's first guess was the right room:", at: 29.1 }],
+  kicker: "Limited retrieval experiment",
+  title: "Room matching *still happens.*",
+  subs: [{ text: "Open Images: 245 person-found queries of 300; 3,000-photo index. Top-1 retrieval hit rate:", at: 29.1 }],
   at: 28.4, out: 35.4,
 });
 
 // ---------- scene 6: footprint ----------
 caption({
-  kicker: "Footprint",
-  title: "Then find the listing photos *of your home.*",
-  subs: [{ text: "Every site that still has them, and how to get each one taken down. <span style='opacity:.75'>(That's the made-up demo address.)</span>", at: 37.6 }],
+  kicker: "Footprint · fixture demo",
+  title: "Check listing sites. *Request removal.*",
+  subs: [{ text: "Manual links and guides. Automated lookups are largely blocked. Sample photos shown, not live results.", at: 37.6 }],
   at: 35.9, out: 41.8,
 });
 
 // ---------- scene 7: outro ----------
 const mark = el("div", "wordmark");
 const letters = [..."unlisted"].map((ch) => el("span", "l", mark, ch));
-const tag = el("div", "tag", stage, "<b>Scrub + Footprint.</b> Free, on-device, no accounts, no analytics.");
+const tag = el("div", "tag", stage, "<b>Local Scrub photos. Server-based Footprint lookups.</b><br>No accounts or analytics. No anonymity guarantee.");
 const urls = ["unlisted-scrub.pages.dev", "unlisted-footprint.pages.dev"].map((u) => el("div", "url", stage, `<i></i>${u}`));
 const credits = el("div", "credits", stage,
-  "Photos from Open Images, CC BY 2.0 (creativecommons.org/licenses/by/2.0): Glory Cycles · City Caucus · Nick Nichols · yeomanshaskell · DAVID BURILLO · John Coley · Son of Groucho · Kulturnett Sogn og Fjordane · Brad Coy · susi.bsu · gail · Goksan Ozman · Richard Berg · Sir Mildred Pierce · Phil Long. App screens are the real, live apps. Eval: DINOv2-base and CLIP B/32 top-1, 300 queries.");
+  "Photos from Open Images, CC BY 2.0 (creativecommons.org/licenses/by/2.0): Glory Cycles · City Caucus · Nick Nichols · yeomanshaskell · DAVID BURILLO · John Coley · Son of Groucho · Kulturnett Sogn og Fjordane · Brad Coy · susi.bsu · gail · Goksan Ozman · Richard Berg · Sir Mildred Pierce · Phil Long. Historical app screenshots; current limits in captions. Fixture grid, not live discovery. Eval: DINOv2-base and CLIP B/32, 245 person-found queries.");
 tag.style.width = Math.min(W - 160, 1200) + "px";
+if (fmt === "reel") tag.style.fontSize = "28px";
 credits.style.width = L.credW + "px";
 document.documentElement.style.setProperty("--markw", "100%");
 on((t) => {

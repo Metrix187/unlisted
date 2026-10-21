@@ -50,7 +50,7 @@ export default defineConfig(({ mode }) => {
         manifest: {
           name: "Footprint",
           short_name: "Footprint",
-          description: "Find the listing photos of your home that are still online, and get them taken down.",
+          description: "Manual listing-search links and photo-removal guides. Address lookups use a server.",
           start_url: "/",
           scope: "/",
           display: "standalone",
