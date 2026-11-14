@@ -2,16 +2,19 @@
 
 ## Who actually controls these photos
 
-Rental listings on Apartments.com (also CoStar) are posted by the **landlord or property manager**, not
-through an MLS. They took or bought the photos, and they're the ones who can delete them. This is where
-interior shots of the place you're living in right now tend to stick around longest.
+Start with the **landlord or property manager** responsible for the listing on Apartments.com (CoStar).
+Photos can be uploaded by the manager, supplied through a feed, or taken by Apartments.com's field staff.
+The removal route depends on the source.
 
 ## Steps
 
 1. Search for your address on Apartments.com yourself, since it blocks automated lookups: {{listingLink}}
 2. If your unit's photos are up, send the message below to your landlord or property manager. If you're in
    a lease, it's reasonable to ask them to stop using photos of your occupied unit.
-3. Still up? Use Apartments.com's contact page (<https://www.apartments.com/customer-support/>) and ask for
+3. Ask the manager to identify the source. For multifamily listings, manually uploaded images can be
+   removed from the listing's albums or deleted from its image library. Feed images must be excluded by
+   the feed provider. See [Apartments.com's media instructions](https://propertyhelp.apartments.com/article/173-edit-a-listing-media).
+4. Still up? Use Apartments.com's contact page (<https://www.apartments.com/customer-support/>) and ask for
    the photos to be removed.
 
 ## Message you can send
