@@ -33,15 +33,18 @@ export function App() {
 
   async function pick(blob: Blob) {
     setError(null);
-    setOutcome(null);
-    if (photo) URL.revokeObjectURL(photo.url);
+    setBusy({ label: "Opening the photo", value: 0 });
     try {
       const { inspectMetadata } = await import("@unlisted/vision");
       const meta = inspectMetadata(new Uint8Array(await blob.slice(0, 256 * 1024).arrayBuffer()));
       const analysis = await vision().analyze(blob, progress);
+      const url = URL.createObjectURL(blob);
+      if (photo) URL.revokeObjectURL(photo.url);
+      if (outcome) URL.revokeObjectURL(outcome.url);
+      setOutcome(null);
       setPhoto({
         blob,
-        url: URL.createObjectURL(blob),
+        url,
         analysis,
         hadMetadata: meta.exif || meta.xmp || meta.iptc,
       });
