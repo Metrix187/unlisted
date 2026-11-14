@@ -50,16 +50,18 @@ function Thumb({ photo, kind, onKind }: { photo: Photo; kind?: Kind; onKind: (k:
   );
 }
 
-function blockedLine(s: SiteResult) {
+function lookupLine(s: SiteResult) {
   if (s.reason === "robots") return "doesn't allow automated lookups, so we didn't look.";
   if (s.reason === "bot-wall") return "showed us a robot check instead of the page.";
   if (s.reason === "not-found") return "didn't have photos we could read.";
-  return "didn't answer properly.";
+  if (s.reason === "error") return "couldn't be reached during this lookup.";
+  if (s.reason === "link-only") return "is a manual search link; we don't run automated lookups there.";
+  return "didn't return photos we could read.";
 }
 
 export function Grid({ result, kinds, onKind, onNext, onBack }: Props) {
   const withPhotos = result.sites.filter((s) => s.photoCount > 0);
-  const blocked = result.sites.filter((s) => s.site !== "streetview" && s.photoCount === 0);
+  const manualSites = result.sites.filter((s) => s.site !== "streetview" && s.photoCount === 0);
   const total = withPhotos.reduce((n, s) => n + s.photoCount, 0);
   const all = withPhotos.flatMap((s) => s.photos);
   const interior = all.filter((p) => kinds[p.thumb] === "interior").length;
@@ -91,17 +93,17 @@ export function Grid({ result, kinds, onKind, onNext, onBack }: Props) {
         </h2>
       )}
 
-      {blocked.length > 0 && (
+      {manualSites.length > 0 && (
         <div class="u-card blocked" data-testid="blocked">
-          {blocked.map((s) => (
+          {manualSites.map((s) => (
             <p key={s.site}>
-              <strong>{s.name} blocked us — open it yourself:</strong>{" "}
+              <strong>{s.name} — check the site:</strong>{" "}
               <a href={s.listingUrl} target="_blank" rel="noopener noreferrer">
                 {s.listingUrl === s.searchUrl ? "search for your home" : "open the listing"}
               </a>
               <br />
               <span class="small u-muted">
-                {s.name} {blockedLine(s)}
+                {s.name} {lookupLine(s)}
               </span>
             </p>
           ))}

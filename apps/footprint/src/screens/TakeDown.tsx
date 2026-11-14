@@ -22,7 +22,7 @@ function Card({
       ? "Street-level photos of the outside of your home."
       : site.photoCount
         ? `${site.photoCount} photo${site.photoCount === 1 ? "" : "s"}${inside ? `, ${inside} of the inside` : ""}.`
-        : "We couldn't look, so check it yourself first.";
+        : "No photos were available in this lookup. Check the site yourself.";
 
   return (
     <article class={`u-card takedown${done ? " takedown--done" : ""}`} data-testid={`card-${site.site}`}>
