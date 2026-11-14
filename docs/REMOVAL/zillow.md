@@ -5,8 +5,8 @@
 Listing photos usually belong to the photographer the agent hired. The listing brokerage licenses them to
 the local MLS, and the MLS feeds them to Zillow. So the people who can make them disappear are, in order:
 
-1. **You, if you own the home.** Zillow is the one big site that lets owners manage photos themselves,
-   through what it calls Owner View (claiming your home).
+1. **You, if you own the home.** Claim the home to access Owner View. Photo controls depend on the
+   listing and may be unavailable for some off-market homes.
 2. **The listing agent or brokerage**, who can ask the MLS and Zillow to pull the media.
 3. **Zillow support**, as a last resort.
 
@@ -19,9 +19,14 @@ If you rent, the landlord or property manager who posted the rental listing is y
 1. Open it up: {{listingLink}}
 2. Sign in, then look for **"Own this home?"** or **"Claim this home"** on the page and go through the
    verification.
-3. Once it's claimed, open the owner view of the home and find **Edit facts / Manage photos**. Delete the
-   photos, or all of them.
-4. Off-market homes can also be hidden from search entirely from the same owner view. Worth doing.
+3. Open **Your Home**, select the home, then choose **Edit Facts** in Owner View.
+4. Select a photo and **Remove Photo**, choose **Delete all photos**, or check **Hide photos displayed
+   on your home's Zillow page**. Click **Save Changes** at the bottom.
+5. Some Recently Sold homes only offer hiding all but the primary photo. Some off-market homes have no
+   Edit Facts option. If the available controls do not remove the photos you need removed, use the
+   Customer Support request linked in [Zillow's photo-removal instructions](https://zillow.zendesk.com/hc/en-us/articles/202036344-How-do-I-hide-or-remove-photos-of-my-home).
+
+Check the public page after the change. Copies on other sites need their own checks.
 
 **If you rent, or claiming doesn't work:**
 
