@@ -6,17 +6,21 @@ Redfin gets listing photos from the MLS. The listing brokerage licensed them to 
 them under that license. That means the **listing agent or brokerage** is the fastest path, and Redfin's
 own support is the backup.
 
-Homeowners can also claim the home on Redfin, which gives you an owner dashboard. Whether it lets you hide
-photos has changed over time, so check, but plan on asking support.
+Homeowners can claim the home and hide listing photos through Redfin's owner controls. The primary
+photo stays visible after this action; removing that image requires Customer Support.
 
 ## Steps
 
 1. Open it up: {{listingLink}}
-2. If you own the place: click **"Is this your home?"** / **"Claim this home"**, verify, and look in the
-   owner dashboard for a photo option.
-3. Send the message below to the listing agent (shown on the listing as "Listed by").
-4. Then ask Redfin directly through <https://www.redfin.com/contact-us>, with the listing link and a request
-   to remove the photos from the off-market listing. Owners and tenants can both ask.
+2. If you own the place, sign in to a verified account on **Redfin.com**, open **My Homes**, select the
+   claimed home, then choose **Edit Photos**. Complete ownership verification if requested.
+3. Check **Hide listing photos**, confirm **Yes, Hide Photos**, then click the red **Save** button.
+4. The primary image (the "hero shot") remains visible. Ask Customer Support through
+   [Redfin's Photos FAQ](https://support.redfin.com/hc/en-us/articles/45556093357595-Photos-FAQ) to remove it
+   or help with photos that remain. Check the public page afterward.
+5. For active sale listings, ask the listing agent or MLS to change the source photos. For rentals fed
+   by an MLS or another site, use Redfin Customer Support. A rental posted through Redfin Rental Tools
+   can be edited in its Rental Dashboard. Send the message below to the appropriate contact.
 
 ## Message you can send
 

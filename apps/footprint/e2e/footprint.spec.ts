@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { type Page, expect, test } from "@playwright/test";
+import type { LookupResult } from "../src/api";
 
 const FOOTPRINT = "http://localhost:4174";
 const DEMO = "123 Example St, Springfield, IL 62701";
@@ -21,8 +22,47 @@ test("demo address: the grid, the count, and who blocked us", async ({ page }) =
   await expect(page.getByRole("note")).toContainText("Fixture demo");
   for (const site of ["zillow", "redfin", "realtor", "trulia"])
     await expect(page.getByTestId(`site-${site}`)).toBeVisible();
-  await expect(page.getByText("Homes.com blocked us — open it yourself:")).toBeVisible();
-  await expect(page.getByText("Apartments.com blocked us — open it yourself:")).toBeVisible();
+  await expect(page.getByText("Homes.com — check the site:")).toBeVisible();
+  await expect(page.getByText("Apartments.com — check the site:")).toBeVisible();
+});
+
+test("manual links and failed lookups retain their actual status", async ({ page }) => {
+  const statuses = [
+    { site: "zillow", name: "Zillow", blocked: true, reason: "robots" },
+    { site: "redfin", name: "Redfin", blocked: true, reason: "bot-wall" },
+    { site: "realtor", name: "Realtor.com", blocked: false, reason: "not-found" },
+    { site: "trulia", name: "Trulia", blocked: true, reason: "error" },
+    { site: "homes", name: "Homes.com", blocked: false, reason: "link-only" },
+    { site: "apartments", name: "Apartments.com", blocked: false },
+  ] satisfies Partial<LookupResult["sites"][number]>[];
+  const result: LookupResult = {
+    address: DEMO,
+    cached: false,
+    fetchedAt: "2026-11-14T00:00:00.000Z",
+    sites: statuses.map((status) => ({
+      ...status,
+      listingUrl: "https://example.com/search",
+      searchUrl: "https://example.com/search",
+      photoCount: 0,
+      photos: [],
+      dates: {},
+    })),
+  };
+  await page.route("**/lookup", (route) => route.fulfill({ json: result }));
+  await find(page);
+  const manual = page.getByTestId("blocked");
+  await expect(manual).not.toContainText("blocked us");
+  await expect(manual).toContainText("Zillow doesn't allow automated lookups");
+  await expect(manual).toContainText("Redfin showed us a robot check");
+  await expect(manual).toContainText("Realtor.com didn't have photos we could read");
+  await expect(manual).toContainText("Trulia couldn't be reached during this lookup");
+  await expect(manual).toContainText("Homes.com is a manual search link");
+  await expect(manual).toContainText("Apartments.com didn't return photos we could read");
+  await expect(manual.getByRole("link")).toHaveCount(6);
+  await page.getByTestId("takedown").click();
+  await expect(page.getByTestId("card-realtor")).toContainText(
+    "No photos were available in this lookup. Check the site yourself.",
+  );
 });
 
 test("take-down cards, and 'mark as requested' sticks without storing the address", async ({ page }) => {

@@ -19,7 +19,8 @@ jobs:
       - run: pnpm test
 
   e2e:
-    runs-on: ubuntu-latest
+    # Playwright 1.53 supports Ubuntu 24.04; ubuntu-latest can select newer unsupported images.
+    runs-on: ubuntu-24.04
     needs: check
     steps:
       - uses: actions/checkout@v4
